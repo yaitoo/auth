@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pquerna/otp/totp"
 	"github.com/yaitoo/auth/masker"
 	"github.com/yaitoo/sqle"
 	"github.com/yaitoo/sqle/migrate"
@@ -327,9 +328,22 @@ func (a *Auth) createUserProfile(ctx context.Context, tx *sqle.Tx, userID shardi
 		UpdatedAt: now,
 	}
 
+	key, err := totp.Generate(totp.GenerateOpts{
+		Issuer:      a.totpIssuer,
+		AccountName: a.totpAccountName,
+	})
+
+	if err != nil {
+		a.logger.Error("auth: totp:Generate",
+			slog.String("tag", "crypto"),
+			slog.Any("err", err))
+		return p, ErrUnknown
+	}
+
 	buf, _ := json.Marshal(ProfileData{
 		Email:  email,
 		Mobile: mobile,
+		TKey:   key.String(),
 	})
 
 	if a.aesKey == nil {
@@ -341,13 +355,13 @@ func (a *Auth) createUserProfile(ctx context.Context, tx *sqle.Tx, userID shardi
 				slog.String("tag", "crypto"),
 				slog.String("text", string(buf)),
 				slog.Any("err", err))
-			return p, ErrBadCrypto
+			return p, ErrUnknown
 		}
 
 		p.Data = ct
 	}
 
-	_, err := tx.ExecBuilder(ctx, a.createBuilder().
+	_, err = tx.ExecBuilder(ctx, a.createBuilder().
 		Insert("<prefix>user_profile").
 		Set("user_id", userID).
 		Set("data", p.Data).

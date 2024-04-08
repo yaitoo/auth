@@ -3,9 +3,8 @@ package auth
 import "errors"
 
 var (
-	ErrBadDatabase   = errors.New("auth: bad_database")
-	ErrBadCrypto     = errors.New("auth: bad_crypto")
-	ErrBadJWTSignKey = errors.New("auth: bad_jwt_signature_key")
+	ErrBadDatabase = errors.New("auth: bad_database")
+	ErrUnknown     = errors.New("auth: unknown")
 )
 
 var (

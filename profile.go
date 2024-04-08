@@ -16,4 +16,5 @@ type Profile struct {
 type ProfileData struct {
 	Email  string `json:"email,omitempty"`
 	Mobile string `json:"mobile,omitempty"`
+	TKey   string `json:"tkey,omitempty"`
 }

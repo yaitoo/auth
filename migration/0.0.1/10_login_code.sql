@@ -6,5 +6,5 @@ CREATE TABLE IF NOT EXISTS `<prefix>login_code` (
   `used_at` datetime DEFAULT NULL,
   `expires_on` datetime NOT NULL,
   `created_at` datetime NOT NULL,
-  PRIMARY KEY (`user_id`)
+  PRIMARY KEY (`user_id`,`hash`)
 );

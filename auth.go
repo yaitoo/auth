@@ -18,6 +18,8 @@ var (
 
 	defaultAccessTokenTTL  = 1 * time.Minute
 	defaultRefreshTokenTTL = 1 * time.Hour
+	defaultTOTPIssuer      = "Yaitoo"
+	defaultTOPTAccountName = "Auth"
 )
 
 type Auth struct {
@@ -32,6 +34,9 @@ type Auth struct {
 	accessTokenTTL  time.Duration
 	refreshTokenTTL time.Duration
 	jwtSignKey      []byte
+
+	totpIssuer      string
+	totpAccountName string
 
 	genUser     *shardid.Generator
 	genLoginLog *shardid.Generator
@@ -81,6 +86,14 @@ func NewAuth(db *sqle.DB, options ...Option) *Auth {
 
 	if a.jwtSignKey == nil {
 		a.jwtSignKey = getJWTKey("")
+	}
+
+	if a.totpIssuer == "" {
+		a.totpIssuer = defaultTOTPIssuer
+	}
+
+	if a.totpAccountName == "" {
+		a.totpAccountName = defaultTOPTAccountName
 	}
 
 	return a

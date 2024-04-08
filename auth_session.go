@@ -31,12 +31,20 @@ func (a *Auth) createSession(ctx context.Context, userID shardid.ID) (Session, e
 	var err error
 	s.AccessToken, err = accToken.SignedString(a.jwtSignKey)
 	if err != nil {
-		return s, ErrBadJWTSignKey
+		a.logger.Error("auth: createSession",
+			slog.String("tag", "token"),
+			slog.String("step", "access_token"),
+			slog.Any("err", err))
+		return s, ErrUnknown
 	}
 
 	s.RefreshToken, err = refToken.SignedString(a.jwtSignKey)
 	if err != nil {
-		return s, ErrBadJWTSignKey
+		a.logger.Error("auth: createSession",
+			slog.String("tag", "token"),
+			slog.String("step", "refresh_token"),
+			slog.Any("err", err))
+		return s, ErrUnknown
 	}
 
 	_, err = a.db.On(userID).

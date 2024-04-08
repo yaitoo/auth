@@ -75,3 +75,10 @@ func WithJWT(signKey string) Option {
 		a.jwtSignKey = getJWTKey(signKey)
 	}
 }
+
+// WithTOTP setup totp option
+func WithTOTP(issuer string) Option {
+	return func(a *Auth) {
+		a.totpIssuer = issuer
+	}
+}
