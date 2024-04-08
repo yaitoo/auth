@@ -49,8 +49,33 @@ func (a *Auth) SignInWithCode(ctx context.Context, email, code string, option Lo
 }
 
 // SignInMobile sign in with mobile and password.
-func (a *Auth) SignInMobile(ctx context.Context, mobile, passwd string, option LoginOption) (*Session, error) {
-	return nil, nil
+func (a *Auth) SignInMobile(ctx context.Context, mobile, passwd string, option LoginOption) (Session, error) {
+	var (
+		s   Session
+		u   User
+		err error
+	)
+
+	u, err = a.getUserByMobile(ctx, mobile)
+
+	if err == nil {
+		if verifyHash(a.hash(), u.Passwd, passwd, u.Salt) {
+			return a.createSession(ctx, u.ID)
+		}
+
+		return s, ErrPasswdNotMatched
+	}
+
+	if option.CreateIfNotExists && errors.Is(err, ErrMobileNotFound) {
+		u, err = a.createLoginWithMobile(ctx, mobile, passwd, option.FirstName, option.LastName)
+		if err != nil {
+			return s, err
+		}
+
+		return a.createSession(ctx, u.ID)
+	}
+
+	return s, err
 }
 
 // SignInMobileWithCode sign in with mobile and code.
