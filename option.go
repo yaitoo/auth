@@ -2,6 +2,7 @@ package auth
 
 import (
 	"hash"
+	"time"
 
 	"github.com/yaitoo/sqle/shardid"
 )
@@ -47,5 +48,30 @@ func WithHash(h func() hash.Hash) Option {
 func WithAES(key string) Option {
 	return func(a *Auth) {
 		a.aesKey = getAESKey(key)
+	}
+}
+
+// WithAccessTokenTTL  setup ttl for access token
+func WithAccessTokenTTL(d time.Duration) Option {
+	return func(a *Auth) {
+		if d > 0 {
+			a.accessTokenTTL = d
+		}
+	}
+}
+
+// WithRefreshTokenTTL setup ttl for refresh token
+func WithRefreshTokenTTL(d time.Duration) Option {
+	return func(a *Auth) {
+		if d > 0 {
+			a.refreshTokenTTL = d
+		}
+	}
+}
+
+// WithJWTSignKey setup jwt signature key
+func WithJWTSignKey(key string) Option {
+	return func(a *Auth) {
+		a.jwtSignKey = getJWTKey(key)
 	}
 }

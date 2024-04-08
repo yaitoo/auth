@@ -16,18 +16,35 @@ import (
 )
 
 // Migrate automatically migrate database schema for auth module
-func (a *Auth) Migrate(ctx context.Context) error {
+func (a *Auth) Migrate(ctx context.Context, options ...migrate.Option) error {
 	m := migrate.New(a.db)
-	err := m.Discover(migration, migrate.WithModule("auth"))
+
+	err := m.Init(ctx)
 	if err != nil {
 		return err
 	}
 
+	options = append(options, migrate.WithModule("auth"))
+	err = m.Discover(migration, options...)
+	if err != nil {
+		return err
+	}
+
+	var vers []migrate.Semver
+
 	for _, v := range m.Versions {
+
+		var migrations []migrate.Migration
 		for _, m := range v.Migrations {
 			m.Scripts = strings.ReplaceAll(m.Scripts, "<prefix>", a.prefix)
+			migrations = append(migrations, m)
 		}
+
+		v.Migrations = migrations
+		vers = append(vers, v)
 	}
+
+	m.Versions = vers
 
 	return m.Migrate(ctx)
 }
@@ -68,7 +85,7 @@ func (a *Auth) getUserByEmail(ctx context.Context, email string) (User, error) {
 
 	err = a.db.On(userID).
 		QueryRowBuilder(ctx, a.createBuilder().
-			Select("user").
+			Select("<prefix>user").
 			Where("id = {id}").Param("id", userID)).
 		Bind(&u)
 
@@ -174,6 +191,20 @@ func (a *Auth) createLoginWithEmail(ctx context.Context, email string, passwd st
 		return u, txErr
 	}
 
+	// commit it first before txEmail starts. Because concurrency transaction doesn't work on SQLite
+	txErr = txUser.Commit()
+	if txErr != nil {
+		a.logger.Error("auth: SignIn",
+			slog.Any("err", txErr),
+			slog.String("tag", "db"),
+			slog.String("step", "txtUser:Commit"),
+			slog.String("email", email))
+		return u, ErrBadDatabase
+	}
+	// txUser is committed, it is impossible to rollback anymore.
+	// User and UserProfile have to be deleted manually when email fails to commit
+	txUserPending = false
+
 	h := generateHash(a.hash(), email, "")
 
 	var db *sqle.Context
@@ -198,19 +229,6 @@ func (a *Auth) createLoginWithEmail(ctx context.Context, email string, passwd st
 	if txErr != nil {
 		return u, txErr
 	}
-
-	txErr = txUser.Commit()
-	if txErr != nil {
-		a.logger.Error("auth: SignIn",
-			slog.Any("err", txErr),
-			slog.String("tag", "db"),
-			slog.String("step", "txtUser:Commit"),
-			slog.String("email", email))
-		return u, ErrBadDatabase
-	}
-	// txUser is committed, it is impossible to rollback anymore.
-	// User and UserProfile have to be deleted manually when email fails to commit
-	txUserPending = false
 
 	txErr = txEmail.Commit()
 	if txErr != nil {

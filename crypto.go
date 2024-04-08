@@ -53,6 +53,10 @@ func verifyHash(h hash.Hash, hash string, source, salt string) bool {
 	return hash == v
 }
 
+func getJWTKey(key string) []byte {
+	return sha256.New().Sum([]byte(key))
+}
+
 func getAESKey(key string) []byte {
 	return sha256.New().Sum([]byte(key))[0:32]
 }

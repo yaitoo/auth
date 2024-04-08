@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS `<prefix>role` (
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `name` varchar(45) NOT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL
+);

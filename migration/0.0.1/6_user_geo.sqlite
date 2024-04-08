@@ -1,0 +1,14 @@
+CREATE TABLE IF NOT EXISTS `<prefix>user_geo` (
+  `user_id` bigint NOT NULL,
+  `ip` varchar(39) NOT NULL,
+  `country` varchar(25) NOT NULL,
+  `region` varchar(45) NOT NULL,
+  `login_times` int NOT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`user_id`,`ip`)
+);
+
+CREATE INDEX `idx_geo_ip` ON `<prefix>user_geo` (`ip`,`user_id`);
+CREATE INDEX `idx_geo_country` ON `<prefix>user_geo`(`country`,`region`,`user_id`);
+

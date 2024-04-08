@@ -6,6 +6,7 @@ import (
 	"hash"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/yaitoo/sqle"
 	"github.com/yaitoo/sqle/shardid"
@@ -14,6 +15,9 @@ import (
 var (
 	//go:embed migration
 	migration embed.FS
+
+	defaultAccessTokenTTL  = 1 * time.Minute
+	defaultRefreshTokenTTL = 1 * time.Hour
 )
 
 type Auth struct {
@@ -24,6 +28,10 @@ type Auth struct {
 	hash func() hash.Hash
 
 	aesKey []byte
+
+	accessTokenTTL  time.Duration
+	refreshTokenTTL time.Duration
+	jwtSignKey      []byte
 
 	genUser     *shardid.Generator
 	genLoginLog *shardid.Generator
@@ -61,6 +69,18 @@ func NewAuth(db *sqle.DB, options ...Option) *Auth {
 
 	if a.genAuditLog == nil {
 		a.genAuditLog = shardid.New()
+	}
+
+	if a.accessTokenTTL <= 0 {
+		a.accessTokenTTL = defaultAccessTokenTTL
+	}
+
+	if a.refreshTokenTTL <= 0 {
+		a.refreshTokenTTL = defaultRefreshTokenTTL
+	}
+
+	if a.jwtSignKey == nil {
+		a.jwtSignKey = getJWTKey("")
 	}
 
 	return a

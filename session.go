@@ -1,17 +1,13 @@
 package auth
 
-import (
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/yaitoo/sqle/shardid"
-)
+import "crypto/sha256"
 
 type Session struct {
-	UserID       shardid.ID   `json:"userID,omitempty"`
-	AccessToken  jwt.Token    `json:"accessToken,omitempty"`
-	RefreshToken RefreshToken `json:"refreshToken,omitempty"`
+	UserID       int64  `json:"userID,omitempty"`
+	AccessToken  string `json:"accessToken,omitempty"`
+	RefreshToken string `json:"refreshToken,omitempty"`
 }
 
-type RefreshToken struct {
-	Token     string `json:"token,omitempty"`
-	ExpiresOn int64  `json:"expiresOn,omitempty"`
+func (s *Session) refreshTokenHash() string {
+	return generateHash(sha256.New(), s.RefreshToken, "")
 }

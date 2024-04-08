@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/yaitoo/sqle/shardid"
 )
@@ -18,24 +17,25 @@ func (a *Auth) SignIn(ctx context.Context, email, passwd string, option LoginOpt
 
 	u, err = a.getUserByEmail(ctx, email)
 
-	if err != nil {
-		if !option.CreateIfNotExists {
+	if err == nil {
+		if verifyHash(a.hash(), u.Passwd, passwd, u.Salt) {
+			return a.createSession(ctx, u.ID)
+		}
+
+		return s, ErrPasswdNotMatched
+	}
+
+	if option.CreateIfNotExists && errors.Is(err, ErrEmailNotFound) {
+		u, err = a.createLoginWithEmail(ctx, email, passwd, option.FirstName, option.LastName)
+		if err != nil {
 			return s, err
 		}
 
-		if errors.Is(err, ErrEmailNotFound) {
-			u, err = a.createLoginWithEmail(ctx, email, passwd, option.FirstName, option.LastName)
-			if err != nil {
-				return s, err
-			}
-		}
-
-		return s, err
+		return a.createSession(ctx, u.ID)
 	}
 
-	fmt.Println(u.CreatedAt)
+	return s, err
 
-	return s, nil
 }
 
 // SignInWithOTP sign in with email and otp.
@@ -61,9 +61,4 @@ func (a *Auth) SignInMobileWithCode(ctx context.Context, mobile, code string, op
 // SignOut sign out the user, and delete his refresh token
 func (a *Auth) SignOut(ctx context.Context, userID shardid.ID) error {
 	return a.deleteUserToken(ctx, userID)
-}
-
-// RefreshTokens refresh access token and refresh token
-func (a *Auth) RefreshTokens(ctx context.Context, userID shardid.ID, refreshToken string) (*Session, error) {
-	return nil, nil
 }
