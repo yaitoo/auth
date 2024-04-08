@@ -69,9 +69,9 @@ func WithRefreshTokenTTL(d time.Duration) Option {
 	}
 }
 
-// WithJWTSignKey setup jwt signature key
-func WithJWTSignKey(key string) Option {
+// WithJWT setup jwt signature key
+func WithJWT(signKey string) Option {
 	return func(a *Auth) {
-		a.jwtSignKey = getJWTKey(key)
+		a.jwtSignKey = getJWTKey(signKey)
 	}
 }

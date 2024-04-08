@@ -20,11 +20,11 @@ func (a *Auth) createSession(ctx context.Context, userID shardid.ID) (Session, e
 		"ttl": a.accessTokenTTL,
 	})
 
-	exp := time.Now().Add(a.refreshTokenTTL).Unix()
+	exp := time.Now().Add(a.refreshTokenTTL)
 	now := time.Now()
 	refToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":  userID,
-		"exp": exp,
+		"exp": exp.Unix(),
 		"ttl": a.refreshTokenTTL,
 	})
 

@@ -20,7 +20,10 @@ func createAuthTest(file string) *Auth {
 
 	//dbTest.SetMaxOpenConns(1)
 
-	authTest := NewAuth(dbTest, WithPrefix("test_"))
+	authTest := NewAuth(dbTest,
+		WithPrefix("test_"),
+		WithJWT("jwt"),
+		WithAES("aes"))
 
 	err := authTest.Migrate(context.Background(), migrate.WithSuffix(".sqlite"))
 	if err != nil {
