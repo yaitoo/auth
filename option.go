@@ -76,9 +76,18 @@ func WithJWT(signKey string) Option {
 	}
 }
 
-// WithTOTP setup totp option
-func WithTOTP(issuer string) Option {
+// WithTOTP setup totp options
+func WithTOTP(issuer string, accountName string) Option {
 	return func(a *Auth) {
 		a.totpIssuer = issuer
+		a.totpAccountName = accountName
+	}
+}
+
+// WithDHT setup dht names
+func WithDHT(email, mobile string) Option {
+	return func(a *Auth) {
+		a.dhtEmail = email
+		a.dhtMobile = mobile
 	}
 }

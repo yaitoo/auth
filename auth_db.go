@@ -59,7 +59,7 @@ func (a *Auth) getUserByEmail(ctx context.Context, email string) (User, error) {
 
 	h := generateHash(a.hash(), email, "")
 
-	db, err := a.db.OnDHT(h)
+	db, err := a.db.OnDHT(h, a.dhtEmail)
 	if err != nil {
 		return u, err
 	}
@@ -209,7 +209,7 @@ func (a *Auth) createLoginWithEmail(ctx context.Context, email string, passwd st
 	h := generateHash(a.hash(), email, "")
 
 	var db *sqle.Context
-	db, txErr = a.db.OnDHT(h)
+	db, txErr = a.db.OnDHT(h, a.dhtEmail)
 
 	if txErr != nil {
 		return u, txErr
@@ -481,7 +481,7 @@ func (a *Auth) createLoginWithMobile(ctx context.Context, mobile string, passwd 
 	h := generateHash(a.hash(), mobile, "")
 
 	var db *sqle.Context
-	db, txErr = a.db.OnDHT(h)
+	db, txErr = a.db.OnDHT(h, a.dhtMobile)
 
 	if txErr != nil {
 		return u, txErr
@@ -526,7 +526,7 @@ func (a *Auth) getUserByMobile(ctx context.Context, mobile string) (User, error)
 
 	h := generateHash(a.hash(), mobile, "")
 
-	db, err := a.db.OnDHT(h)
+	db, err := a.db.OnDHT(h, a.dhtMobile)
 	if err != nil {
 		return u, err
 	}

@@ -20,6 +20,8 @@ var (
 	defaultRefreshTokenTTL = 1 * time.Hour
 	defaultTOTPIssuer      = "Yaitoo"
 	defaultTOPTAccountName = "Auth"
+	defaultDHTEmail        = "auth:email"
+	defaultDHTMobile       = "auth:mobile"
 )
 
 type Auth struct {
@@ -37,6 +39,9 @@ type Auth struct {
 
 	totpIssuer      string
 	totpAccountName string
+
+	dhtEmail  string
+	dhtMobile string
 
 	genUser     *shardid.Generator
 	genLoginLog *shardid.Generator
@@ -94,6 +99,14 @@ func NewAuth(db *sqle.DB, options ...Option) *Auth {
 
 	if a.totpAccountName == "" {
 		a.totpAccountName = defaultTOPTAccountName
+	}
+
+	if a.dhtEmail == "" {
+		a.dhtEmail = defaultDHTEmail
+	}
+
+	if a.dhtMobile == "" {
+		a.dhtMobile = defaultDHTMobile
 	}
 
 	return a

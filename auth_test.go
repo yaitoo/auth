@@ -23,7 +23,12 @@ func createAuthTest(file string) *Auth {
 	authTest := NewAuth(dbTest,
 		WithPrefix("test_"),
 		WithJWT("jwt"),
-		WithAES("aes"))
+		WithAES("aes"),
+		WithTOTP("Yaitoo", "Test"),
+		WithDHT("auth:email", "auth:mobile"))
+
+	dbTest.NewDHT("auth:email", 0)
+	dbTest.NewDHT("auth:mobile", 0)
 
 	err := authTest.Migrate(context.Background(), migrate.WithSuffix(".sqlite"))
 	if err != nil {
