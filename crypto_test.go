@@ -7,9 +7,9 @@ import (
 )
 
 func TestAES(t *testing.T) {
-	key := getAESKey(randLetters(5))
+	key := getAESKey(randStr(5, dicAlphaNumber))
 
-	src := randLetters(10)
+	src := randStr(10, dicAlphaNumber)
 
 	cipherText, err := encryptText([]byte(src), key)
 	require.NoError(t, err)

@@ -91,3 +91,11 @@ func WithDHT(email, mobile string) Option {
 		a.dhtMobile = mobile
 	}
 }
+
+// WithSignInCode set sign in code length and ttl
+func WithSignInCode(len int, ttl time.Duration) Option {
+	return func(a *Auth) {
+		a.signInCodeLen = len
+		a.signInCodeTTL = ttl
+	}
+}

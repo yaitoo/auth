@@ -8,35 +8,22 @@ import (
 	"encoding/hex"
 	"hash"
 	"io"
-	mr "math/rand"
-	"time"
 )
 
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 const (
-	letterIdxBits = 6                    // 6 bits to represent a letter index
-	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
-	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
+	dicAlpha       = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	dicNumber      = "0123456789"
+	dicAlphaNumber = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 )
 
-func randLetters(n int) string {
-	src := mr.NewSource(time.Now().UnixNano())
+func randStr(n int, dic string) string {
+	var bytes = make([]byte, n)
+	rand.Read(bytes) // nolint: errcheck
 
-	b := make([]byte, n)
-	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
-	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
-		if remain == 0 {
-			cache, remain = src.Int63(), letterIdxMax
-		}
-		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
-			b[i] = letterBytes[idx]
-			i--
-		}
-		cache >>= letterIdxBits
-		remain--
+	for k, v := range bytes {
+		bytes[k] = dic[v%byte(len(dic))]
 	}
-
-	return string(b)
+	return string(bytes)
 }
 
 func generateHash(h hash.Hash, source, salt string) string {

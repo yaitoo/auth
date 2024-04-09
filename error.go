@@ -15,5 +15,6 @@ var (
 
 	ErrPasswdNotMatched = errors.New("auth: passwd_not_matched")
 
-	ErrOTPNotMatched = errors.New("auth: otp_not_matched")
+	ErrOTPNotMatched  = errors.New("auth: otp_not_matched")
+	ErrCodeNotMatched = errors.New("auth: code_not_matched")
 )

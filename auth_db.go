@@ -113,6 +113,38 @@ func (a *Auth) getUserByEmail(ctx context.Context, email string) (User, error) {
 	return u, nil
 }
 
+func (a *Auth) getUserIDByEmail(ctx context.Context, email string) (shardid.ID, error) {
+	var userID shardid.ID
+
+	h := generateHash(a.hash(), email, "")
+
+	db, err := a.db.OnDHT(h, a.dhtEmail)
+	if err != nil {
+		return userID, err
+	}
+
+	err = db.
+		QueryRowBuilder(ctx, a.createBuilder().
+			Select("<prefix>user_email", "user_id").
+			Where("hash = {hash}").
+			Param("hash", generateHash(a.hash(), email, ""))).
+		Scan(&userID)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return userID, ErrEmailNotFound
+		}
+		a.logger.Error("auth: getUserByEmail",
+			slog.String("pos", "user_email"),
+			slog.String("tag", "db"),
+			slog.String("email", email),
+			slog.Any("err", err))
+		return userID, ErrBadDatabase
+	}
+
+	return userID, nil
+}
+
 func (a *Auth) deleteUserToken(ctx context.Context, userID shardid.ID) error {
 	_, err := a.db.On(userID).
 		ExecBuilder(ctx, a.createBuilder().
@@ -255,7 +287,7 @@ func (a *Auth) createUser(ctx context.Context, tx *sqle.Tx, id shardid.ID, passw
 		Status:    UserStatusWaiting,
 		FirstName: firstName,
 		LastName:  lastName,
-		Salt:      randLetters(10),
+		Salt:      randStr(10, dicAlphaNumber),
 	}
 
 	u.Passwd = generateHash(a.hash(), passwd, u.Salt)
@@ -580,6 +612,38 @@ func (a *Auth) getUserByMobile(ctx context.Context, mobile string) (User, error)
 	return u, nil
 }
 
+func (a *Auth) getUserIDByMobile(ctx context.Context, mobile string) (shardid.ID, error) {
+	var userID shardid.ID
+
+	h := generateHash(a.hash(), mobile, "")
+
+	db, err := a.db.OnDHT(h, a.dhtMobile)
+	if err != nil {
+		return userID, err
+	}
+
+	err = db.
+		QueryRowBuilder(ctx, a.createBuilder().
+			Select("<prefix>user_mobile", "user_id").
+			Where("hash = {hash}").
+			Param("hash", generateHash(a.hash(), mobile, ""))).
+		Scan(&userID)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return userID, ErrMobileNotFound
+		}
+		a.logger.Error("auth: getUserByMobile",
+			slog.String("pos", "user_mobile"),
+			slog.String("tag", "db"),
+			slog.String("mobile", mobile),
+			slog.Any("err", err))
+		return userID, ErrBadDatabase
+	}
+
+	return userID, nil
+}
+
 func (a *Auth) createUserMobile(ctx context.Context, tx *sqle.Tx, userID shardid.ID, mobile string, hash string, now time.Time) error {
 
 	_, err := tx.ExecBuilder(ctx, a.createBuilder().
@@ -652,4 +716,58 @@ func (a *Auth) getUserProfileData(ctx context.Context, userID shardid.ID) (Profi
 	}
 
 	return pd, nil
+}
+
+func (a *Auth) createSignInCode(ctx context.Context, userID shardid.ID, ip string) (string, error) {
+	code := randStr(a.signInCodeLen, dicNumber)
+
+	now := time.Now()
+
+	_, err := a.db.On(userID).
+		ExecBuilder(ctx, a.createBuilder().
+			Insert("<prefix>signin_code").
+			Set("user_id", userID.Int64).
+			Set("hash", generateHash(a.hash(), code, "")).
+			Set("ip", ip).
+			Set("expires_on", now.Add(a.signInCodeTTL)).
+			Set("created_at", now).
+			End())
+
+	if err != nil {
+		a.logger.Error("auth: createSignInCode",
+			slog.Int64("user_id", userID.Int64),
+			slog.Any("err", err))
+		return "", ErrBadDatabase
+	}
+	return code, nil
+}
+
+func (a *Auth) checkSignInCode(ctx context.Context, userID shardid.ID, code string) error {
+	h := generateHash(a.hash(), code, "")
+
+	var count int
+	err := a.db.On(userID).
+		QueryRowBuilder(ctx, a.createBuilder().
+			Select("<prefix>signin_code", "count(user_id)").
+			Where("user_id = {user_id} AND hash = {hash}").
+			Param("user_id", userID.Int64).
+			Param("hash", h)).
+		Scan(&count)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrCodeNotMatched
+		}
+		a.logger.Error("auth: checkSignInCode",
+			slog.Int64("user_id", userID.Int64),
+			slog.String("code", code),
+			slog.Any("err", err))
+		return ErrBadDatabase
+	}
+
+	if count == 0 {
+		return ErrCodeNotMatched
+	}
+
+	return nil
 }

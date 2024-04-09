@@ -22,6 +22,8 @@ var (
 	defaultTOPTAccountName = "Auth"
 	defaultDHTEmail        = "auth:email"
 	defaultDHTMobile       = "auth:mobile"
+	defaultSignInCodeLen   = 6
+	defaultSignInCodeTTL   = 60 * time.Second
 )
 
 var (
@@ -44,6 +46,9 @@ type Auth struct {
 
 	totpIssuer      string
 	totpAccountName string
+
+	signInCodeLen int
+	signInCodeTTL time.Duration
 
 	dhtEmail  string
 	dhtMobile string
@@ -112,6 +117,14 @@ func NewAuth(db *sqle.DB, options ...Option) *Auth {
 
 	if a.dhtMobile == "" {
 		a.dhtMobile = defaultDHTMobile
+	}
+
+	if a.signInCodeLen < 1 {
+		a.signInCodeLen = defaultSignInCodeLen
+	}
+
+	if a.signInCodeTTL < 1 {
+		a.signInCodeTTL = defaultSignInCodeTTL
 	}
 
 	return a

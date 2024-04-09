@@ -7,6 +7,7 @@ import (
 
 	"github.com/pquerna/otp/totp"
 	"github.com/stretchr/testify/require"
+	"github.com/yaitoo/sqle/shardid"
 )
 
 func TestSignInWithOTP(t *testing.T) {
@@ -14,11 +15,11 @@ func TestSignInWithOTP(t *testing.T) {
 	authTest := createAuthTest("./tests_sign_in_with_otp.db")
 
 	tests := []struct {
-		name      string
-		setup     func(r *require.Assertions) string
-		email     string
-		wantedErr error
-		assert    func(r *require.Assertions, s Session)
+		name         string
+		setup        func(r *require.Assertions) string
+		email        string
+		wantedErr    error
+		checkSession bool
 	}{
 		{
 			name:  "email_not_found_should_not_work",
@@ -54,6 +55,7 @@ func TestSignInWithOTP(t *testing.T) {
 				return code
 
 			},
+			checkSession: true,
 		},
 	}
 
@@ -70,8 +72,17 @@ func TestSignInWithOTP(t *testing.T) {
 				require.ErrorIs(t, err, test.wantedErr)
 			}
 
-			if test.assert != nil {
-				test.assert(r, s)
+			if test.checkSession {
+				userID := shardid.Parse(s.UserID)
+				var id int64
+				err := authTest.db.On(userID).
+					QueryRowBuilder(context.Background(), authTest.createBuilder().
+						Select("<prefix>user_token", "user_id").
+						Where("hash = {hash}").
+						Param("hash", s.refreshTokenHash())).
+					Scan(&id)
+
+				r.NoError(err)
 			}
 
 		})
@@ -83,11 +94,11 @@ func TestSignInMobileWithOTP(t *testing.T) {
 	authTest := createAuthTest("./tests_sign_in_mobile_with_otp.db")
 
 	tests := []struct {
-		name      string
-		setup     func(r *require.Assertions) string
-		mobile    string
-		wantedErr error
-		assert    func(r *require.Assertions, s Session)
+		name         string
+		setup        func(r *require.Assertions) string
+		mobile       string
+		wantedErr    error
+		checkSession bool
 	}{
 		{
 			name:   "mobile_not_found_should_not_work",
@@ -123,6 +134,7 @@ func TestSignInMobileWithOTP(t *testing.T) {
 				return code
 
 			},
+			checkSession: true,
 		},
 	}
 
@@ -138,11 +150,18 @@ func TestSignInMobileWithOTP(t *testing.T) {
 			} else {
 				require.ErrorIs(t, err, test.wantedErr)
 			}
+			if test.checkSession {
+				userID := shardid.Parse(s.UserID)
+				var id int64
+				err := authTest.db.On(userID).
+					QueryRowBuilder(context.Background(), authTest.createBuilder().
+						Select("<prefix>user_token", "user_id").
+						Where("hash = {hash}").
+						Param("hash", s.refreshTokenHash())).
+					Scan(&id)
 
-			if test.assert != nil {
-				test.assert(r, s)
+				r.NoError(err)
 			}
-
 		})
 	}
 }
