@@ -2,73 +2,40 @@ package auth
 
 import (
 	"context"
-	"log/slog"
-	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/yaitoo/sqle/shardid"
 )
 
-func (a *Auth) createSession(ctx context.Context, userID shardid.ID) (Session, error) {
-	s := Session{
-		UserID: userID.Int64,
-	}
-
-	accToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":  userID,
-		"exp": time.Now().Add(a.accessTokenTTL).Unix(),
-		"ttl": a.accessTokenTTL,
-	})
-
-	exp := time.Now().Add(a.refreshTokenTTL)
-	now := time.Now()
-	refToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":  userID,
-		"exp": exp.Unix(),
-		"ttl": a.refreshTokenTTL,
-	})
-
-	var err error
-	s.AccessToken, err = accToken.SignedString(a.jwtSignKey)
-	if err != nil {
-		a.logger.Error("auth: createSession",
-			slog.String("tag", "token"),
-			slog.String("step", "access_token"),
-			slog.Any("err", err))
-		return s, ErrUnknown
-	}
-
-	s.RefreshToken, err = refToken.SignedString(a.jwtSignKey)
-	if err != nil {
-		a.logger.Error("auth: createSession",
-			slog.String("tag", "token"),
-			slog.String("step", "refresh_token"),
-			slog.Any("err", err))
-		return s, ErrUnknown
-	}
-
-	_, err = a.db.On(userID).
-		ExecBuilder(ctx, a.createBuilder().
-			Insert("<prefix>user_token").
-			Set("user_id", userID.Int64).
-			Set("hash", s.refreshTokenHash()).
-			Set("expires_on", exp).
-			Set("created_at", now).
-			End())
-
-	if err != nil {
-		a.logger.Error("auth: createSession",
-			slog.String("tag", "db"),
-			slog.Int64("user_id", userID.Int64),
-			slog.Any("err", err))
-		return s, ErrBadDatabase
-	}
-
-	return s, nil
+// SignOut sign out the user, and delete his refresh token
+func (a *Auth) SignOut(ctx context.Context, uid shardid.ID) error {
+	return a.deleteUserToken(ctx, uid, "")
 }
 
-func (a *Auth) RefreshSession(ctx context.Context) (Session, error) {
-	var s Session
+// RefreshSession refresh access token and refresh token
+func (a *Auth) RefreshSession(ctx context.Context, refreshToken string) (Session, error) {
+	token, err := jwt.ParseWithClaims(refreshToken, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return a.jwtSignKey, nil
+	})
 
-	return s, nil
+	if err != nil {
+		return noSession, err
+	}
+
+	if !token.Valid {
+		return noSession, ErrInvalidRefreshToken
+	}
+
+	uc := token.Claims.(*UserClaims)
+
+	uid := shardid.Parse(uc.ID)
+
+	err = a.checkRefreshToken(ctx, uid, refreshToken)
+	if err != nil {
+		return noSession, err
+	}
+
+	go a.deleteUserToken(ctx, uid, refreshToken) // nolint: errcheck
+
+	return a.createSession(ctx, uid)
 }

@@ -40,6 +40,10 @@ func verifyHash(h hash.Hash, hash string, source, salt string) bool {
 	return hash == v
 }
 
+func hashToken(token string) string {
+	return generateHash(sha256.New(), token, "")
+}
+
 func getJWTKey(key string) []byte {
 	return sha256.New().Sum([]byte(key))
 }

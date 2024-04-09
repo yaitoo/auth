@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/pquerna/otp/totp"
 	"github.com/yaitoo/auth/masker"
 	"github.com/yaitoo/sqle"
@@ -145,17 +146,19 @@ func (a *Auth) getUserIDByEmail(ctx context.Context, email string) (shardid.ID, 
 	return userID, nil
 }
 
-func (a *Auth) deleteUserToken(ctx context.Context, userID shardid.ID) error {
-	_, err := a.db.On(userID).
+func (a *Auth) deleteUserToken(ctx context.Context, uid shardid.ID, token string) error {
+	_, err := a.db.On(uid).
 		ExecBuilder(ctx, a.createBuilder().
 			Delete("<prefix>user_token").
 			Where("user_id = {user_id}").
-			Param("user_id", userID))
+			If(token != "").And(" hash = {hash}").
+			Param("hash", hashToken(token)).
+			Param("user_id", uid))
 
 	if err != nil {
 		a.logger.Error("auth: deleteUserToken",
 			slog.String("tag", "db"),
-			slog.Int64("user_id", userID.Int64),
+			slog.Int64("user_id", uid.Int64),
 			slog.Any("err", err))
 		return ErrBadDatabase
 	}
@@ -767,6 +770,94 @@ func (a *Auth) checkSignInCode(ctx context.Context, userID shardid.ID, code stri
 
 	if count == 0 {
 		return ErrCodeNotMatched
+	}
+
+	return nil
+}
+
+func (a *Auth) createSession(ctx context.Context, userID shardid.ID) (Session, error) {
+	s := Session{
+		UserID: userID.Int64,
+	}
+
+	now := time.Now()
+	accToken := jwt.NewWithClaims(jwt.SigningMethodHS256, UserClaims{
+		ID:             userID.Int64,
+		IssuedAt:       now.Unix(),
+		ExpirationTime: now.Add(a.accessTokenTTL).Unix(),
+	})
+
+	exp := time.Now().Add(a.refreshTokenTTL)
+
+	refToken := jwt.NewWithClaims(jwt.SigningMethodHS256, UserClaims{
+		ID:             userID.Int64,
+		Nonce:          randStr(12, dicAlphaNumber),
+		IssuedAt:       now.Unix(),
+		ExpirationTime: exp.Unix(),
+	})
+
+	var err error
+	s.AccessToken, err = accToken.SignedString(a.jwtSignKey)
+	if err != nil {
+		a.logger.Error("auth: createSession",
+			slog.String("tag", "token"),
+			slog.String("step", "access_token"),
+			slog.Any("err", err))
+		return s, ErrUnknown
+	}
+
+	s.RefreshToken, err = refToken.SignedString(a.jwtSignKey)
+	if err != nil {
+		a.logger.Error("auth: createSession",
+			slog.String("tag", "token"),
+			slog.String("step", "refresh_token"),
+			slog.Any("err", err))
+		return s, ErrUnknown
+	}
+
+	_, err = a.db.On(userID).
+		ExecBuilder(ctx, a.createBuilder().
+			Insert("<prefix>user_token").
+			Set("user_id", userID.Int64).
+			Set("hash", hashToken(s.RefreshToken)).
+			Set("expires_on", exp).
+			Set("created_at", now).
+			End())
+
+	if err != nil {
+		a.logger.Error("auth: createSession",
+			slog.String("tag", "db"),
+			slog.Int64("user_id", userID.Int64),
+			slog.Any("err", err))
+		return s, ErrBadDatabase
+	}
+
+	return s, nil
+}
+
+func (a *Auth) checkRefreshToken(ctx context.Context, userID shardid.ID, token string) error {
+	var count int
+	err := a.db.On(userID).
+		QueryRowBuilder(ctx, a.createBuilder().
+			Select("<prefix>user_token", "count(user_id)").
+			Where("user_id = {user_id} AND hash = {hash}").
+			Param("user_id", userID.Int64).
+			Param("hash", hashToken(token))).
+		Scan(&count)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrInvalidRefreshToken
+		}
+		a.logger.Error("auth: checkRefreshToken",
+			slog.Int64("user_id", userID.Int64),
+			slog.String("token", token),
+			slog.Any("err", err))
+		return ErrBadDatabase
+	}
+
+	if count == 0 {
+		return ErrInvalidRefreshToken
 	}
 
 	return nil

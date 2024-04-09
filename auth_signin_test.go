@@ -87,7 +87,7 @@ func TestSignIn(t *testing.T) {
 					QueryRowBuilder(context.Background(), authTest.createBuilder().
 						Select("<prefix>user_token", "user_id").
 						Where("hash = {hash}").
-						Param("hash", s.refreshTokenHash())).
+						Param("hash", hashToken(s.RefreshToken))).
 					Scan(&id)
 
 				r.NoError(err)
@@ -129,7 +129,7 @@ func TestSignInMobile(t *testing.T) {
 					QueryRowBuilder(context.Background(), authTest.createBuilder().
 						Select("<prefix>user_token", "user_id").
 						Where("hash = {hash}").
-						Param("hash", s.refreshTokenHash())).
+						Param("hash", hashToken(s.RefreshToken))).
 					Scan(&id)
 
 				r.NoError(err)

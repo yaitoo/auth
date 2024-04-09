@@ -3,8 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-
-	"github.com/yaitoo/sqle/shardid"
 )
 
 // SignIn sign in with email and password.
@@ -54,9 +52,4 @@ func (a *Auth) SignInMobile(ctx context.Context, mobile, passwd string, option L
 	}
 
 	return noSession, err
-}
-
-// SignOut sign out the user, and delete his refresh token
-func (a *Auth) SignOut(ctx context.Context, userID shardid.ID) error {
-	return a.deleteUserToken(ctx, userID)
 }
