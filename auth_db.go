@@ -343,7 +343,7 @@ func (a *Auth) createUserProfile(ctx context.Context, tx *sqle.Tx, userID shardi
 	buf, _ := json.Marshal(ProfileData{
 		Email:  email,
 		Mobile: mobile,
-		TKey:   key.String(),
+		TKey:   key.Secret(),
 	})
 
 	if a.aesKey == nil {
@@ -601,4 +601,55 @@ func (a *Auth) createUserMobile(ctx context.Context, tx *sqle.Tx, userID shardid
 	}
 
 	return nil
+}
+
+func (a *Auth) getUserProfileData(ctx context.Context, userID shardid.ID) (ProfileData, error) {
+	var data string
+	err := a.db.On(userID).
+		QueryRowBuilder(ctx, a.createBuilder().
+			Select("<prefix>user_profile", "data").
+			Where("user_id = {user_id}").
+			Param("user_id", userID)).
+		Scan(&data)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return noProfileData, ErrProfileNotFound
+		}
+		a.logger.Error("auth: getUserProfileData",
+			slog.String("tag", "db"),
+			slog.Int64("user_id", userID.Int64),
+			slog.Any("err", err))
+		return noProfileData, ErrBadDatabase
+	}
+
+	if data == "" {
+		return noProfileData, ErrProfileNotFound
+	}
+
+	var pd ProfileData
+
+	if a.aesKey != nil {
+		data, err = decryptText(data, a.aesKey)
+		if err != nil {
+			a.logger.Error("auth: getUserProfileData",
+				slog.String("step", "decryptText"),
+				slog.String("tag", "crypto"),
+				slog.String("text", data),
+				slog.Any("err", err))
+
+			return noProfileData, ErrUnknown
+		}
+	}
+
+	err = json.Unmarshal([]byte(data), &pd)
+	if err != nil {
+		a.logger.Error("auth: getUserProfileData",
+			slog.String("step", "json"),
+			slog.Int64("user_id", userID.Int64),
+			slog.Any("err", err))
+		return noProfileData, ErrUnknown
+	}
+
+	return pd, nil
 }

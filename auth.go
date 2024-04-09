@@ -24,6 +24,11 @@ var (
 	defaultDHTMobile       = "auth:mobile"
 )
 
+var (
+	noSession     Session
+	noProfileData ProfileData
+)
+
 type Auth struct {
 	db     *sqle.DB
 	prefix string

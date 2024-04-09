@@ -79,7 +79,7 @@ func encryptText(plainText []byte, key []byte) (string, error) {
 	//Create a nonce. Nonce should be from GCM
 	nonce := make([]byte, aesGCM.NonceSize())
 	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-		panic(err.Error())
+		return "", err
 	}
 
 	//Encrypt the data using aesGCM.Seal
