@@ -93,9 +93,9 @@ func WithDHT(email, mobile string) Option {
 }
 
 // WithSignInCode set sign in code length and ttl
-func WithSignInCode(len int, ttl time.Duration) Option {
+func WithSignInCode(l int, ttl time.Duration) Option {
 	return func(a *Auth) {
-		a.signInCodeLen = len
+		a.signInCodeLen = l
 		a.signInCodeTTL = ttl
 	}
 }

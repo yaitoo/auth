@@ -30,7 +30,7 @@ func createAuthTest(file string) *Auth {
 	dbTest.NewDHT("auth:email", 0)
 	dbTest.NewDHT("auth:mobile", 0)
 
-	m, err := authTest.CreateMigrator(context.Background(), migrate.WithSuffix(".sqlite"))
+	m, err := authTest.CreateMigrator(migrate.WithSuffix(".sqlite"))
 	if err != nil {
 		panic(err)
 	}
