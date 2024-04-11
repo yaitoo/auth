@@ -12,6 +12,7 @@ var (
 	ErrMobileNotFound  = errors.New("auth: mobile_not_found")
 	ErrUserNotFound    = errors.New("auth: user_not_found")
 	ErrProfileNotFound = errors.New("auth: profile_not_found")
+	ErrPermNotFound    = errors.New("auth: perm_not_found")
 
 	ErrPasswdNotMatched = errors.New("auth: passwd_not_matched")
 
