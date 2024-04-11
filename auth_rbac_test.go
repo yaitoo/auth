@@ -174,6 +174,15 @@ func TestRBAC(t *testing.T) {
 
 				r.Equal("grant:update", items[0])
 				r.Equal("grant:view", items[1])
+
+				err = au.RevokePerms(ctx, rid, "grant:update")
+				r.NoError(err)
+
+				items, err = au.GetUserPerms(ctx, uid.Int64)
+				r.NoError(err)
+				r.Len(items, 1)
+
+				r.Equal("grant:view", items[0])
 			},
 		},
 	}

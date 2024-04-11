@@ -286,6 +286,29 @@ func (a *Auth) GrantPerms(ctx context.Context, rid int, codes ...string) error {
 	})
 }
 
+// GrantPerms revoke permissions from the role
+func (a *Auth) RevokePerms(ctx context.Context, rid int, codes ...string) error {
+	return a.db.Transaction(ctx, &sql.TxOptions{}, func(ctx context.Context, tx *sqle.Tx) error {
+		var err error
+
+		for _, code := range codes {
+			_, err = tx.ExecBuilder(ctx, a.createBuilder().
+				Delete("<prefix>role_perm").
+				Where("role_id = {role_id} AND perm_code = {perm_code}").
+				Param("role_id", rid).
+				Param("perm_code", code))
+			if err != nil {
+				a.logger.Error("auth: GrantPerms",
+					slog.String("tag", "db"),
+					slog.Any("err", err))
+				return ErrBadDatabase
+			}
+		}
+
+		return nil
+	})
+}
+
 // GetUserPerms get user's permissions granted by its roles
 func (a *Auth) GetUserPerms(ctx context.Context, uid int64) ([]string, error) {
 	rows, err := a.db.QueryBuilder(ctx, a.createBuilder().
