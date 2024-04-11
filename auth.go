@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"crypto/sha256"
 	"embed"
 	"hash"
@@ -60,6 +59,7 @@ type Auth struct {
 	genAuditLog *shardid.Generator
 }
 
+// NewAuth create an auth provider with db and options
 // skipcq: GO-R1005
 func NewAuth(db *sqle.DB, options ...Option) *Auth {
 	a := &Auth{
@@ -134,7 +134,7 @@ func NewAuth(db *sqle.DB, options ...Option) *Auth {
 }
 
 // CreateMigrator automatically migrate database schema for auth module
-func (a *Auth) CreateMigrator(ctx context.Context, options ...migrate.Option) (*migrate.Migrator, error) {
+func (a *Auth) CreateMigrator(options ...migrate.Option) (*migrate.Migrator, error) {
 	m := migrate.New(a.db)
 
 	options = append(options, migrate.WithModule("auth"))
