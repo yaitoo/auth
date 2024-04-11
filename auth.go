@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/sha256"
 	"embed"
 	"hash"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/yaitoo/sqle"
+	"github.com/yaitoo/sqle/migrate"
 	"github.com/yaitoo/sqle/shardid"
 )
 
@@ -128,4 +130,33 @@ func NewAuth(db *sqle.DB, options ...Option) *Auth {
 	}
 
 	return a
+}
+
+// CreateMigrator automatically migrate database schema for auth module
+func (a *Auth) CreateMigrator(ctx context.Context, options ...migrate.Option) (*migrate.Migrator, error) {
+	m := migrate.New(a.db)
+
+	options = append(options, migrate.WithModule("auth"))
+	err := m.Discover(migration, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	var vers []migrate.Semver
+
+	for _, v := range m.Versions {
+
+		var migrations []migrate.Migration
+		for _, m := range v.Migrations {
+			m.Scripts = strings.ReplaceAll(m.Scripts, "<prefix>", a.prefix)
+			migrations = append(migrations, m)
+		}
+
+		v.Migrations = migrations
+		vers = append(vers, v)
+	}
+
+	m.Versions = vers
+
+	return m, nil
 }

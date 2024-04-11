@@ -6,50 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pquerna/otp/totp"
 	"github.com/yaitoo/auth/masker"
 	"github.com/yaitoo/sqle"
-	"github.com/yaitoo/sqle/migrate"
 	"github.com/yaitoo/sqle/shardid"
 )
-
-// Migrate automatically migrate database schema for auth module
-func (a *Auth) Migrate(ctx context.Context, options ...migrate.Option) error {
-	m := migrate.New(a.db)
-
-	err := m.Init(ctx)
-	if err != nil {
-		return err
-	}
-
-	options = append(options, migrate.WithModule("auth"))
-	err = m.Discover(migration, options...)
-	if err != nil {
-		return err
-	}
-
-	var vers []migrate.Semver
-
-	for _, v := range m.Versions {
-
-		var migrations []migrate.Migration
-		for _, m := range v.Migrations {
-			m.Scripts = strings.ReplaceAll(m.Scripts, "<prefix>", a.prefix)
-			migrations = append(migrations, m)
-		}
-
-		v.Migrations = migrations
-		vers = append(vers, v)
-	}
-
-	m.Versions = vers
-
-	return m.Migrate(ctx)
-}
 
 func (a *Auth) createBuilder() *sqle.Builder {
 	return sqle.New().Input("prefix", a.prefix)
@@ -858,6 +822,75 @@ func (a *Auth) checkRefreshToken(ctx context.Context, userID shardid.ID, token s
 
 	if count == 0 {
 		return ErrInvalidRefreshToken
+	}
+
+	return nil
+}
+
+func (a *Auth) getPermTag(ctx context.Context, code string) (string, error) {
+
+	var v string
+
+	err := a.db.
+		QueryRowBuilder(ctx, a.createBuilder().
+			Select("<prefix>perm", "tag").
+			Where("code = {code}").End().
+			Param("code", code)).
+		Scan(&v)
+
+	if err == nil {
+		return v, nil
+	}
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrPermNotFound
+	}
+
+	a.logger.Error("auth: getPermTag",
+		slog.String("tag", "db"),
+		slog.String("code", code),
+		slog.Any("err", err))
+	return "", ErrBadDatabase
+}
+
+func (a *Auth) updatePermTag(ctx context.Context, code, tag string) error {
+	_, err := a.db.
+		ExecBuilder(ctx, a.createBuilder().
+			Update("<prefix>perm").
+			Set("tag", tag).
+			Set("updated_at", time.Now()).
+			Where("code = {code}").
+			Param("code", code))
+	if err != nil {
+		a.logger.Error("auth: updatePermTag",
+			slog.String("tag", "db"),
+			slog.String("code", code),
+			slog.String("perm_tag", tag),
+			slog.Any("err", err))
+		return ErrBadDatabase
+	}
+
+	return nil
+}
+
+func (a *Auth) createPerm(ctx context.Context, code, tag string) error {
+	now := time.Now()
+	_, err := a.db.
+		ExecBuilder(ctx, a.createBuilder().
+			Insert("<prefix>perm").
+			Set("code", code).
+			Set("tag", tag).
+			Set("created_at", now).
+			Set("updated_at", now).
+			End())
+
+	if err != nil {
+		a.logger.Error("auth: createPerm",
+			slog.String("tag", "db"),
+			slog.String("code", code),
+			slog.String("perm_tag", tag),
+			slog.Any("err", err))
+		return ErrBadDatabase
 	}
 
 	return nil
