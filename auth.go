@@ -60,6 +60,7 @@ type Auth struct {
 	genAuditLog *shardid.Generator
 }
 
+// skipcq: GO-R1005
 func NewAuth(db *sqle.DB, options ...Option) *Auth {
 	a := &Auth{
 		db: db,

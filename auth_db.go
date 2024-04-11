@@ -129,7 +129,7 @@ func (a *Auth) deleteUserToken(ctx context.Context, uid shardid.ID, token string
 	return nil
 }
 
-func (a *Auth) createLoginWithEmail(ctx context.Context, email string, passwd string, firstName, lastName string) (User, error) {
+func (a *Auth) createLoginWithEmail(ctx context.Context, email, passwd, firstName, lastName string) (User, error) {
 	var (
 		txUser, txEmail *sqle.Tx
 		txErr           error
@@ -248,7 +248,7 @@ func (a *Auth) createLoginWithEmail(ctx context.Context, email string, passwd st
 	return u, nil
 }
 
-func (a *Auth) createUser(ctx context.Context, tx *sqle.Tx, id shardid.ID, passwd string, firstName, lastName string, now time.Time) (User, error) {
+func (a *Auth) createUser(ctx context.Context, tx *sqle.Tx, id shardid.ID, passwd, firstName, lastName string, now time.Time) (User, error) {
 	u := User{
 		ID:        id,
 		Status:    UserStatusWaiting,
@@ -378,7 +378,7 @@ func (a *Auth) createUserProfile(ctx context.Context, tx *sqle.Tx, userID shardi
 	return p, nil
 }
 
-func (a *Auth) createUserEmail(ctx context.Context, tx *sqle.Tx, userID shardid.ID, email string, hash string, now time.Time) error {
+func (a *Auth) createUserEmail(ctx context.Context, tx *sqle.Tx, userID shardid.ID, email, hash string, now time.Time) error {
 
 	_, err := tx.ExecBuilder(ctx, a.createBuilder().
 		Insert("<prefix>user_email").
@@ -401,7 +401,7 @@ func (a *Auth) createUserEmail(ctx context.Context, tx *sqle.Tx, userID shardid.
 	return nil
 }
 
-func (a *Auth) createLoginWithMobile(ctx context.Context, mobile string, passwd string, firstName, lastName string) (User, error) {
+func (a *Auth) createLoginWithMobile(ctx context.Context, mobile, passwd, firstName, lastName string) (User, error) {
 	var (
 		txUser, txMobile *sqle.Tx
 		txErr            error
@@ -611,7 +611,7 @@ func (a *Auth) getUserIDByMobile(ctx context.Context, mobile string) (shardid.ID
 	return userID, nil
 }
 
-func (a *Auth) createUserMobile(ctx context.Context, tx *sqle.Tx, userID shardid.ID, mobile string, hash string, now time.Time) error {
+func (a *Auth) createUserMobile(ctx context.Context, tx *sqle.Tx, userID shardid.ID, mobile, hash string, now time.Time) error {
 
 	_, err := tx.ExecBuilder(ctx, a.createBuilder().
 		Insert("<prefix>user_mobile").

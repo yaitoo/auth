@@ -286,7 +286,7 @@ func (a *Auth) GrantPerms(ctx context.Context, rid int, codes ...string) error {
 	})
 }
 
-// GrantPerms revoke permissions from the role
+// RevokePerms revoke permissions from the role
 func (a *Auth) RevokePerms(ctx context.Context, rid int, codes ...string) error {
 	return a.db.Transaction(ctx, &sql.TxOptions{}, func(ctx context.Context, tx *sqle.Tx) error {
 		var err error

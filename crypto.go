@@ -35,7 +35,7 @@ func generateHash(h hash.Hash, source, salt string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func verifyHash(h hash.Hash, hash string, source, salt string) bool {
+func verifyHash(h hash.Hash, hash, source, salt string) bool {
 	v := generateHash(h, source, salt)
 	return hash == v
 }
@@ -52,7 +52,7 @@ func getAESKey(key string) []byte {
 	return sha256.New().Sum([]byte(key))[0:32]
 }
 
-func encryptText(plainText []byte, key []byte) (string, error) {
+func encryptText(plainText, key []byte) (string, error) {
 
 	//Create a new Cipher Block from the key
 	block, err := aes.NewCipher(key)

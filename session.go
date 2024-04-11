@@ -24,7 +24,7 @@ func (m UserClaims) GetExpirationTime() (*jwt.NumericDate, error) {
 }
 
 // GetNotBefore implements the Claims interface.
-func (m UserClaims) GetNotBefore() (*jwt.NumericDate, error) {
+func (_ UserClaims) GetNotBefore() (*jwt.NumericDate, error) {
 	return nil, nil
 }
 
@@ -34,16 +34,16 @@ func (m UserClaims) GetIssuedAt() (*jwt.NumericDate, error) {
 }
 
 // GetAudience implements the Claims interface.
-func (m UserClaims) GetAudience() (jwt.ClaimStrings, error) {
+func (_ UserClaims) GetAudience() (jwt.ClaimStrings, error) {
 	return nil, nil
 }
 
 // GetIssuer implements the Claims interface.
-func (m UserClaims) GetIssuer() (string, error) {
+func (_ UserClaims) GetIssuer() (string, error) {
 	return "", nil
 }
 
 // GetSubject implements the Claims interface.
-func (m UserClaims) GetSubject() (string, error) {
+func (_ UserClaims) GetSubject() (string, error) {
 	return "", nil
 }
