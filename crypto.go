@@ -54,27 +54,27 @@ func getAESKey(key string) []byte {
 
 func encryptText(plainText, key []byte) (string, error) {
 
-	//Create a new Cipher Block from the key
+	// Create a new Cipher Block from the key
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
 	}
 
-	//Create a new GCM - https://en.wikipedia.org/wiki/Galois/Counter_Mode
-	//https://golang.org/pkg/crypto/cipher/#NewGCM
+	// Create a new GCM - https://en.wikipedia.org/wiki/Galois/Counter_Mode
+	// https://golang.org/pkg/crypto/cipher/#NewGCM
 	aesGCM, err := cipher.NewGCM(block)
 	if err != nil {
 		return "", err
 	}
 
-	//Create a nonce. Nonce should be from GCM
+	// Create a nonce. Nonce should be from GCM
 	nonce := make([]byte, aesGCM.NonceSize())
 	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
 		return "", err
 	}
 
-	//Encrypt the data using aesGCM.Seal
-	//Since we don't want to save the nonce somewhere else in this case, we add it as a prefix to the encrypted data. The first nonce argument in Seal is the prefix.
+	// Encrypt the data using aesGCM.Seal
+	// Since we don't want to save the nonce somewhere else in this case, we add it as a prefix to the encrypted data. The first nonce argument in Seal is the prefix.
 	return hex.EncodeToString(aesGCM.Seal(nonce, nonce, plainText, nil)), nil
 }
 
@@ -82,25 +82,25 @@ func decryptText(cipherText string, key []byte) (string, error) {
 
 	enc, _ := hex.DecodeString(cipherText)
 
-	//Create a new Cipher Block from the key
+	// Create a new Cipher Block from the key
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
 	}
 
-	//Create a new GCM
+	// Create a new GCM
 	aesGCM, err := cipher.NewGCM(block)
 	if err != nil {
 		return "", err
 	}
 
-	//Get the nonce size
+	// Get the nonce size
 	nonceSize := aesGCM.NonceSize()
 
-	//Extract the nonce from the encrypted data
+	// Extract the nonce from the encrypted data
 	nonce, cipherBuf := enc[:nonceSize], enc[nonceSize:]
 
-	//Decrypt the data
+	// Decrypt the data
 	plainBuf, err := aesGCM.Open(nil, nonce, cipherBuf, nil)
 	if err != nil {
 		return "", err

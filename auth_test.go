@@ -18,7 +18,7 @@ func createAuthTest(file string) *Auth {
 
 	dbTest := sqle.Open(db)
 
-	//dbTest.SetMaxOpenConns(1)
+	// dbTest.SetMaxOpenConns(1)
 
 	authTest := NewAuth(dbTest,
 		WithPrefix("test_"),
