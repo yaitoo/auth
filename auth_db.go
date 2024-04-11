@@ -829,18 +829,17 @@ func (a *Auth) checkRefreshToken(ctx context.Context, userID shardid.ID, token s
 
 func (a *Auth) getPermTag(ctx context.Context, code string) (string, error) {
 
-	var tag string
+	var v string
 
 	err := a.db.
 		QueryRowBuilder(ctx, a.createBuilder().
 			Select("<prefix>perm", "tag").
 			Where("code = {code}").End().
-			SQL("LIMIT 1").
 			Param("code", code)).
-		Scan(&tag)
+		Scan(&v)
 
 	if err == nil {
-		return tag, nil
+		return v, nil
 	}
 
 	if errors.Is(err, sql.ErrNoRows) {
