@@ -7,7 +7,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/pquerna/otp v1.4.0
 	github.com/stretchr/testify v1.9.0
-	github.com/yaitoo/sqle v1.4.3-0.20240411063247-d0752e7e5ffb
+	github.com/yaitoo/sqle v1.4.3
 )
 
 require (
