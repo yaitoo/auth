@@ -59,9 +59,9 @@ type Auth struct {
 	genAuditLog *shardid.Generator
 }
 
-// NewAuth create an auth provider with db and options
+// New create an auth provider with db and options
 // skipcq: GO-R1005
-func NewAuth(db *sqle.DB, options ...Option) *Auth {
+func New(db *sqle.DB, options ...Option) *Auth {
 	a := &Auth{
 		db: db,
 	}

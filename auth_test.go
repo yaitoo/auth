@@ -20,7 +20,7 @@ func createAuthTest(file string) *Auth {
 
 	// dbTest.SetMaxOpenConns(1)
 
-	authTest := NewAuth(dbTest,
+	authTest := New(dbTest,
 		WithPrefix("test_"),
 		WithJWT("jwt"),
 		WithAES("aes"),
