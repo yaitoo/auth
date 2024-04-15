@@ -115,7 +115,7 @@ func (a *Auth) deleteUserToken(ctx context.Context, uid shardid.ID, token string
 		ExecBuilder(ctx, a.createBuilder().
 			Delete("<prefix>user_token").
 			Where("user_id = {user_id}").
-			If(token != "").And(" hash = {hash}").
+			If(token != "").And("hash = {hash}").
 			Param("hash", hashToken(token)).
 			Param("user_id", uid))
 
@@ -811,7 +811,7 @@ func (a *Auth) checkRefreshToken(ctx context.Context, userID shardid.ID, token s
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return ErrInvalidRefreshToken
+			return ErrInvalidToken
 		}
 		a.logger.Error("auth: checkRefreshToken",
 			slog.Int64("user_id", userID.Int64),
@@ -821,7 +821,7 @@ func (a *Auth) checkRefreshToken(ctx context.Context, userID shardid.ID, token s
 	}
 
 	if count == 0 {
-		return ErrInvalidRefreshToken
+		return ErrInvalidToken
 	}
 
 	return nil

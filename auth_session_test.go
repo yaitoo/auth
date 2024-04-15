@@ -25,13 +25,13 @@ func TestSession(t *testing.T) {
 	require.NoError(t, err)
 	// old token should be deleted
 	err = au.checkRefreshToken(context.Background(), uid, s.RefreshToken)
-	require.ErrorIs(t, err, ErrInvalidRefreshToken)
+	require.ErrorIs(t, err, ErrInvalidToken)
 
 	// sign out should delete all tokens
 	err = au.SignOut(context.Background(), uid)
 	require.NoError(t, err)
 
 	err = au.checkRefreshToken(context.Background(), uid, rs.RefreshToken)
-	require.ErrorIs(t, err, ErrInvalidRefreshToken)
+	require.ErrorIs(t, err, ErrInvalidToken)
 
 }
