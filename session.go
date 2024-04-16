@@ -8,6 +8,8 @@ import (
 
 type Session struct {
 	UserID       int64  `json:"userID,omitempty"`
+	FirstName    string `json:"firstName,omitempty"`
+	LastName     string `json:"lastName,omitempty"`
 	AccessToken  string `json:"accessToken,omitempty"`
 	RefreshToken string `json:"refreshToken,omitempty"`
 }

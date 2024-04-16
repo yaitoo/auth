@@ -11,7 +11,7 @@ func (a *Auth) SignIn(ctx context.Context, email, passwd string, option LoginOpt
 
 	if err == nil {
 		if verifyHash(a.hash(), u.Passwd, passwd, u.Salt) {
-			return a.createSession(ctx, u.ID)
+			return a.createSession(ctx, u.ID, u.FirstName, u.LastName)
 		}
 
 		return noSession, ErrPasswdNotMatched
@@ -23,7 +23,7 @@ func (a *Auth) SignIn(ctx context.Context, email, passwd string, option LoginOpt
 			return noSession, err
 		}
 
-		return a.createSession(ctx, u.ID)
+		return a.createSession(ctx, u.ID, u.FirstName, u.LastName)
 	}
 
 	return noSession, err
@@ -36,7 +36,7 @@ func (a *Auth) SignInMobile(ctx context.Context, mobile, passwd string, option L
 
 	if err == nil {
 		if verifyHash(a.hash(), u.Passwd, passwd, u.Salt) {
-			return a.createSession(ctx, u.ID)
+			return a.createSession(ctx, u.ID, u.FirstName, u.LastName)
 		}
 
 		return noSession, ErrPasswdNotMatched
@@ -48,7 +48,7 @@ func (a *Auth) SignInMobile(ctx context.Context, mobile, passwd string, option L
 			return noSession, err
 		}
 
-		return a.createSession(ctx, u.ID)
+		return a.createSession(ctx, u.ID, u.FirstName, u.LastName)
 	}
 
 	return noSession, err

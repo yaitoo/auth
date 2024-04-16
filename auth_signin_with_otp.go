@@ -9,13 +9,13 @@ import (
 // SignInWithOTP sign in with email and otp.
 func (a *Auth) SignInWithOTP(ctx context.Context, email, otp string) (Session, error) {
 
-	id, err := a.getUserIDByEmail(ctx, email)
+	u, err := a.getUserByEmail(ctx, email)
 
 	if err != nil {
 		return noSession, ErrEmailNotFound
 	}
 
-	pd, err := a.getUserProfileData(ctx, id)
+	pd, err := a.getUserProfileData(ctx, u.ID)
 	if err != nil {
 		return noSession, err
 	}
@@ -24,19 +24,19 @@ func (a *Auth) SignInWithOTP(ctx context.Context, email, otp string) (Session, e
 		return noSession, ErrOTPNotMatched
 	}
 
-	return a.createSession(ctx, id)
+	return a.createSession(ctx, u.ID, u.FirstName, u.LastName)
 
 }
 
 // SignInMobileWithOTP sign in with mobile and otp.
 func (a *Auth) SignInMobileWithOTP(ctx context.Context, mobile, otp string) (Session, error) {
-	id, err := a.getUserIDByMobile(ctx, mobile)
+	u, err := a.getUserByMobile(ctx, mobile)
 
 	if err != nil {
 		return noSession, ErrMobileNotFound
 	}
 
-	pd, err := a.getUserProfileData(ctx, id)
+	pd, err := a.getUserProfileData(ctx, u.ID)
 	if err != nil {
 		return noSession, err
 	}
@@ -45,5 +45,5 @@ func (a *Auth) SignInMobileWithOTP(ctx context.Context, mobile, otp string) (Ses
 		return noSession, ErrOTPNotMatched
 	}
 
-	return a.createSession(ctx, id)
+	return a.createSession(ctx, u.ID, u.FirstName, u.LastName)
 }

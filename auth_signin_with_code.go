@@ -23,17 +23,17 @@ func (a *Auth) CreateSignInCode(ctx context.Context, email string, option LoginO
 
 // SignInWithCode sign in with email and code.
 func (a *Auth) SignInWithCode(ctx context.Context, email, code string) (Session, error) {
-	id, err := a.getUserIDByEmail(ctx, email)
+	u, err := a.getUserByEmail(ctx, email)
 	if err != nil {
 		return noSession, err
 	}
 
-	err = a.checkSignInCode(ctx, id, code)
+	err = a.checkSignInCode(ctx, u.ID, code)
 	if err != nil {
 		return noSession, err
 	}
 
-	return a.createSession(ctx, id)
+	return a.createSession(ctx, u.ID, u.FirstName, u.LastName)
 }
 
 // CreateSignInMobileCode create a code for signing in by mobile
@@ -54,15 +54,15 @@ func (a *Auth) CreateSignInMobileCode(ctx context.Context, mobile string, option
 
 // SignInMobileWithCode sign in with mobile and code.
 func (a *Auth) SignInMobileWithCode(ctx context.Context, mobile, code string) (Session, error) {
-	id, err := a.getUserIDByMobile(ctx, mobile)
+	u, err := a.getUserByMobile(ctx, mobile)
 	if err != nil {
 		return noSession, err
 	}
 
-	err = a.checkSignInCode(ctx, id, code)
+	err = a.checkSignInCode(ctx, u.ID, code)
 	if err != nil {
 		return noSession, err
 	}
 
-	return a.createSession(ctx, id)
+	return a.createSession(ctx, u.ID, u.FirstName, u.LastName)
 }

@@ -59,5 +59,10 @@ func (a *Auth) RefreshSession(ctx context.Context, refreshToken string) (Session
 
 	go a.deleteUserToken(ctx, uid, refreshToken) // nolint: errcheck
 
-	return a.createSession(ctx, uid)
+	u, err := a.getUserByID(ctx, uid)
+	if err != nil {
+		return noSession, err
+	}
+
+	return a.createSession(ctx, uid, u.FirstName, u.FirstName)
 }

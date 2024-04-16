@@ -19,6 +19,30 @@ func (a *Auth) createBuilder() *sqle.Builder {
 	return sqle.New().Input("prefix", a.prefix)
 }
 
+func (a *Auth) getUserByID(ctx context.Context, uid shardid.ID) (User, error) {
+	var u User
+
+	err := a.db.On(uid).
+		QueryRowBuilder(ctx, a.createBuilder().
+			Select("<prefix>user").
+			Where("id = {id}").Param("id", uid.Int64)).
+		Bind(&u)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return u, ErrUserNotFound
+		}
+		a.logger.Error("auth: getUserByID",
+			slog.String("pos", "user"),
+			slog.String("tag", "db"),
+			slog.Int64("user_id", uid.Int64),
+			slog.Any("err", err))
+		return u, ErrBadDatabase
+	}
+
+	return u, nil
+}
+
 func (a *Auth) getUserByEmail(ctx context.Context, email string) (User, error) {
 	var u User
 
@@ -739,9 +763,11 @@ func (a *Auth) checkSignInCode(ctx context.Context, userID shardid.ID, code stri
 	return nil
 }
 
-func (a *Auth) createSession(ctx context.Context, userID shardid.ID) (Session, error) {
+func (a *Auth) createSession(ctx context.Context, userID shardid.ID, firstName, lastName string) (Session, error) {
 	s := Session{
-		UserID: userID.Int64,
+		UserID:    userID.Int64,
+		FirstName: firstName,
+		LastName:  lastName,
 	}
 
 	now := time.Now()
