@@ -8,9 +8,9 @@ import (
 	"github.com/yaitoo/sqle/shardid"
 )
 
-func TestSignIn(t *testing.T) {
+func TestLogin(t *testing.T) {
 
-	authTest := createAuthTest("./tests_sign_in.db")
+	authTest := createAuthTest("./tests_login.db")
 
 	tests := []struct {
 		name         string
@@ -73,7 +73,7 @@ func TestSignIn(t *testing.T) {
 				}
 			}
 
-			s, err := authTest.SignIn(context.TODO(), test.email, test.passwd, test.option)
+			s, err := authTest.Login(context.TODO(), test.email, test.passwd, test.option)
 			if test.wantedErr == nil {
 				require.NoError(t, err)
 			} else {
@@ -97,9 +97,9 @@ func TestSignIn(t *testing.T) {
 	}
 }
 
-func TestSignInMobile(t *testing.T) {
+func TestLoginMobile(t *testing.T) {
 
-	authTest := createAuthTest("./tests_sign_in_mobile.db")
+	authTest := createAuthTest("./tests_login_mobile.db")
 
 	tests := []struct {
 		name      string
@@ -173,7 +173,7 @@ func TestSignInMobile(t *testing.T) {
 				}
 			}
 
-			s, err := authTest.SignInMobile(context.TODO(), test.mobile, test.passwd, test.option)
+			s, err := authTest.LoginMobile(context.TODO(), test.mobile, test.passwd, test.option)
 			if test.wantedErr == nil {
 				require.NoError(t, err)
 			} else {

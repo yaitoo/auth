@@ -3,16 +3,14 @@ package auth
 import (
 	"context"
 	"testing"
-	"time"
 
-	"github.com/pquerna/otp/totp"
 	"github.com/stretchr/testify/require"
 	"github.com/yaitoo/sqle/shardid"
 )
 
-func TestSignInWithOTP(t *testing.T) {
+func TestLoginWithCode(t *testing.T) {
 
-	authTest := createAuthTest("./tests_sign_in_with_otp.db")
+	authTest := createAuthTest("./tests_login_with_code.db")
 
 	tests := []struct {
 		name         string
@@ -23,35 +21,30 @@ func TestSignInWithOTP(t *testing.T) {
 	}{
 		{
 			name:  "email_not_found_should_not_work",
-			email: "not_found@sign_in_with_otp.com",
+			email: "not_found@sign_in_with_code.com",
 			setup: func(r *require.Assertions) string {
 				return ""
 			},
 			wantedErr: ErrEmailNotFound,
 		},
 		{
-			name:      "otp_not_matched_should_not_work",
-			email:     "otp_not_matched@sign_in_with_otp.com",
-			wantedErr: ErrOTPNotMatched,
+			name:      "code_not_matched_should_not_work",
+			email:     "code_not_matched@sign_in_with_code.com",
+			wantedErr: ErrCodeNotMatched,
 			setup: func(r *require.Assertions) string {
-				_, err := authTest.createLoginWithEmail(context.Background(), "otp_not_matched@sign_in_with_otp.com", "abc123", "", "")
+				_, err := authTest.CreateLoginCode(context.Background(), "code_not_matched@sign_in_with_code.com", LoginOption{CreateIfNotExists: true})
 				r.NoError(err)
 
 				return ""
 			},
 		},
 		{
-			name:  "otp_should_work",
-			email: "otp@sign_in_with_otp.com",
+			name:  "code_should_work",
+			email: "code@sign_in_with_code.com",
 			setup: func(r *require.Assertions) string {
-				u, err := authTest.createLoginWithEmail(context.Background(), "otp@sign_in_with_otp.com", "abc123", "", "")
+				code, err := authTest.CreateLoginCode(context.Background(), "code@sign_in_with_code.com", LoginOption{CreateIfNotExists: true})
 				r.NoError(err)
 
-				pd, err := authTest.getUserProfileData(context.Background(), u.ID)
-				r.NoError(err)
-
-				code, err := totp.GenerateCode(pd.TKey, time.Now())
-				r.NoError(err)
 				return code
 
 			},
@@ -65,7 +58,7 @@ func TestSignInWithOTP(t *testing.T) {
 
 			code := test.setup(r)
 
-			s, err := authTest.SignInWithOTP(context.TODO(), test.email, code)
+			s, err := authTest.LoginWithCode(context.TODO(), test.email, code)
 			if test.wantedErr == nil {
 				require.NoError(t, err)
 			} else {
@@ -89,9 +82,9 @@ func TestSignInWithOTP(t *testing.T) {
 	}
 }
 
-func TestSignInMobileWithOTP(t *testing.T) {
+func TestLoginMobileWithCode(t *testing.T) {
 
-	authTest := createAuthTest("./tests_sign_in_mobile_with_otp.db")
+	authTest := createAuthTest("./tests_login_mobile_with_code.db")
 
 	tests := []struct {
 		name         string
@@ -102,37 +95,31 @@ func TestSignInMobileWithOTP(t *testing.T) {
 	}{
 		{
 			name:   "mobile_not_found_should_not_work",
-			mobile: "1+111222333",
+			mobile: "1+222333444",
 			setup: func(r *require.Assertions) string {
 				return ""
 			},
 			wantedErr: ErrMobileNotFound,
 		},
 		{
-			name:      "otp_not_matched_should_not_work",
-			mobile:    "1+222333444",
-			wantedErr: ErrOTPNotMatched,
+			name:      "code_not_matched_should_not_work",
+			mobile:    "1+333444555",
+			wantedErr: ErrCodeNotMatched,
 			setup: func(r *require.Assertions) string {
-				_, err := authTest.createLoginWithMobile(context.Background(), "1+222333444", "abc123", "", "")
+				_, err := authTest.CreateLoginMobileCode(context.Background(), "1+333444555", LoginOption{CreateIfNotExists: true})
 				r.NoError(err)
 
 				return ""
 			},
 		},
 		{
-			name:   "otp_should_work",
-			mobile: "1+333444555",
+			name:   "code_should_work",
+			mobile: "1+444555666",
 			setup: func(r *require.Assertions) string {
-				u, err := authTest.createLoginWithMobile(context.Background(), "1+333444555", "abc123", "", "")
+				code, err := authTest.CreateLoginMobileCode(context.Background(), "1+444555666", LoginOption{CreateIfNotExists: true})
 				r.NoError(err)
 
-				pd, err := authTest.getUserProfileData(context.Background(), u.ID)
-				r.NoError(err)
-
-				code, err := totp.GenerateCode(pd.TKey, time.Now())
-				r.NoError(err)
 				return code
-
 			},
 			checkSession: true,
 		},
@@ -144,12 +131,13 @@ func TestSignInMobileWithOTP(t *testing.T) {
 
 			code := test.setup(r)
 
-			s, err := authTest.SignInMobileWithOTP(context.TODO(), test.mobile, code)
+			s, err := authTest.LoginMobileWithCode(context.TODO(), test.mobile, code)
 			if test.wantedErr == nil {
 				require.NoError(t, err)
 			} else {
 				require.ErrorIs(t, err, test.wantedErr)
 			}
+
 			if test.checkSession {
 				userID := shardid.Parse(s.UserID)
 				var id int64
@@ -162,6 +150,7 @@ func TestSignInMobileWithOTP(t *testing.T) {
 
 				r.NoError(err)
 			}
+
 		})
 	}
 }

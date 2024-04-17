@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS `<prefix>signin_openid` (
+CREATE TABLE IF NOT EXISTS `<prefix>login_openid` (
   `hash` varchar(125) NOT NULL,
   `openid_user` varchar(125) NOT NULL,
   `openid_app` varchar(50) NOT NULL,

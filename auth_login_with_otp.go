@@ -6,8 +6,8 @@ import (
 	"github.com/pquerna/otp/totp"
 )
 
-// SignInWithOTP sign in with email and otp.
-func (a *Auth) SignInWithOTP(ctx context.Context, email, otp string) (Session, error) {
+// LoginWithOTP sign in with email and otp.
+func (a *Auth) LoginWithOTP(ctx context.Context, email, otp string) (Session, error) {
 
 	u, err := a.getUserByEmail(ctx, email)
 
@@ -24,12 +24,12 @@ func (a *Auth) SignInWithOTP(ctx context.Context, email, otp string) (Session, e
 		return noSession, ErrOTPNotMatched
 	}
 
-	return a.createSession(ctx, u.ID, u.FirstName, u.LastName)
+	return a.createSession(ctx, u.ID, u.FirstName, u.LastName, "", "OTP")
 
 }
 
-// SignInMobileWithOTP sign in with mobile and otp.
-func (a *Auth) SignInMobileWithOTP(ctx context.Context, mobile, otp string) (Session, error) {
+// LoginMobileWithOTP sign in with mobile and otp.
+func (a *Auth) LoginMobileWithOTP(ctx context.Context, mobile, otp string) (Session, error) {
 	u, err := a.getUserByMobile(ctx, mobile)
 
 	if err != nil {
@@ -45,5 +45,5 @@ func (a *Auth) SignInMobileWithOTP(ctx context.Context, mobile, otp string) (Ses
 		return noSession, ErrOTPNotMatched
 	}
 
-	return a.createSession(ctx, u.ID, u.FirstName, u.LastName)
+	return a.createSession(ctx, u.ID, u.FirstName, u.LastName, "", "OTP")
 }

@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS `<prefix>signin_log` (
+CREATE TABLE IF NOT EXISTS `<prefix>login_log` (
   `id` bigint NOT NULL,
   `user_id` bigint NOT NULL,
   `method` char(1) NOT NULL COMMENT 'E=email/password/L=password less/T=TOTP/A=oauth',

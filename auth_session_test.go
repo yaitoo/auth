@@ -11,7 +11,7 @@ import (
 func TestSession(t *testing.T) {
 	au := createAuthTest("./tests_session.db")
 
-	s, err := au.SignIn(context.TODO(), "u@session.com", "abc123", LoginOption{CreateIfNotExists: true})
+	s, err := au.Login(context.TODO(), "u@session.com", "abc123", LoginOption{CreateIfNotExists: true})
 	require.NoError(t, err)
 
 	uid := shardid.Parse(s.UserID)
@@ -19,7 +19,7 @@ func TestSession(t *testing.T) {
 	require.NoError(t, err)
 
 	// refresh token should be refreshed
-	rs, err := au.RefreshSession(context.Background(), s.RefreshToken)
+	rs, err := au.RefreshSession(context.Background(), s.RefreshToken, ClientInfo{})
 	require.NoError(t, err)
 	err = au.checkRefreshToken(context.Background(), uid, rs.RefreshToken)
 	require.NoError(t, err)
@@ -28,7 +28,7 @@ func TestSession(t *testing.T) {
 	require.ErrorIs(t, err, ErrInvalidToken)
 
 	// sign out should delete all tokens
-	err = au.SignOut(context.Background(), uid)
+	err = au.Logout(context.Background(), uid)
 	require.NoError(t, err)
 
 	err = au.checkRefreshToken(context.Background(), uid, rs.RefreshToken)

@@ -709,23 +709,23 @@ func (a *Auth) getUserProfileData(ctx context.Context, userID shardid.ID) (Profi
 	return pd, nil
 }
 
-func (a *Auth) createSignInCode(ctx context.Context, userID shardid.ID, ip string) (string, error) {
-	code := randStr(a.signInCodeLen, dicNumber)
+func (a *Auth) createLoginCode(ctx context.Context, userID shardid.ID, userIP string) (string, error) {
+	code := randStr(a.loginCodeSize, dicNumber)
 
 	now := time.Now()
 
 	_, err := a.db.On(userID).
 		ExecBuilder(ctx, a.createBuilder().
-			Insert("<prefix>signin_code").
+			Insert("<prefix>login_code").
 			Set("user_id", userID.Int64).
 			Set("hash", generateHash(a.hash(), code, "")).
-			Set("ip", ip).
-			Set("expires_on", now.Add(a.signInCodeTTL)).
+			Set("user_ip", userIP).
+			Set("expires_on", now.Add(a.loginCodeTTL)).
 			Set("created_at", now).
 			End())
 
 	if err != nil {
-		a.logger.Error("auth: createSignInCode",
+		a.logger.Error("auth: createloginCode",
 			slog.Int64("user_id", userID.Int64),
 			slog.Any("err", err))
 		return "", ErrBadDatabase
@@ -733,37 +733,33 @@ func (a *Auth) createSignInCode(ctx context.Context, userID shardid.ID, ip strin
 	return code, nil
 }
 
-func (a *Auth) checkSignInCode(ctx context.Context, userID shardid.ID, code string) error {
+func (a *Auth) getLoginCodeUserIP(ctx context.Context, userID shardid.ID, code string) (string, error) {
 	h := generateHash(a.hash(), code, "")
 
-	var count int
+	var userIP string
 	err := a.db.On(userID).
 		QueryRowBuilder(ctx, a.createBuilder().
-			Select("<prefix>signin_code", "count(user_id)").
+			Select("<prefix>login_code", "user_ip").
 			Where("user_id = {user_id} AND hash = {hash}").
 			Param("user_id", userID.Int64).
 			Param("hash", h)).
-		Scan(&count)
+		Scan(&userIP)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return ErrCodeNotMatched
+			return "", ErrCodeNotMatched
 		}
-		a.logger.Error("auth: checkSignInCode",
+		a.logger.Error("auth: checkloginCode",
 			slog.Int64("user_id", userID.Int64),
 			slog.String("code", code),
 			slog.Any("err", err))
-		return ErrBadDatabase
+		return "", ErrBadDatabase
 	}
 
-	if count == 0 {
-		return ErrCodeNotMatched
-	}
-
-	return nil
+	return userIP, nil
 }
 
-func (a *Auth) createSession(ctx context.Context, userID shardid.ID, firstName, lastName string) (Session, error) {
+func (a *Auth) createSession(ctx context.Context, userID shardid.ID, firstName, lastName, userIP, userAgent string) (Session, error) {
 	s := Session{
 		UserID:    userID.Int64,
 		FirstName: firstName,
@@ -810,6 +806,8 @@ func (a *Auth) createSession(ctx context.Context, userID shardid.ID, firstName, 
 			Insert("<prefix>user_token").
 			Set("user_id", userID.Int64).
 			Set("hash", hashToken(s.RefreshToken)).
+			Set("user_ip", userID).
+			Set("user_agent", userAgent).
 			Set("expires_on", exp).
 			Set("created_at", now).
 			End())

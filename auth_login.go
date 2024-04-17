@@ -5,13 +5,13 @@ import (
 	"errors"
 )
 
-// SignIn sign in with email and password.
-func (a *Auth) SignIn(ctx context.Context, email, passwd string, option LoginOption) (Session, error) {
+// Login sign in with email and password.
+func (a *Auth) Login(ctx context.Context, email, passwd string, option LoginOption) (Session, error) {
 	u, err := a.getUserByEmail(ctx, email)
 
 	if err == nil {
 		if verifyHash(a.hash(), u.Passwd, passwd, u.Salt) {
-			return a.createSession(ctx, u.ID, u.FirstName, u.LastName)
+			return a.createSession(ctx, u.ID, u.FirstName, u.LastName, option.UserIP, option.UserAgent)
 		}
 
 		return noSession, ErrPasswdNotMatched
@@ -23,20 +23,20 @@ func (a *Auth) SignIn(ctx context.Context, email, passwd string, option LoginOpt
 			return noSession, err
 		}
 
-		return a.createSession(ctx, u.ID, u.FirstName, u.LastName)
+		return a.createSession(ctx, u.ID, u.FirstName, u.LastName, option.UserIP, option.UserAgent)
 	}
 
 	return noSession, err
 
 }
 
-// SignInMobile sign in with mobile and password.
-func (a *Auth) SignInMobile(ctx context.Context, mobile, passwd string, option LoginOption) (Session, error) {
+// LoginMobile sign in with mobile and password.
+func (a *Auth) LoginMobile(ctx context.Context, mobile, passwd string, option LoginOption) (Session, error) {
 	u, err := a.getUserByMobile(ctx, mobile)
 
 	if err == nil {
 		if verifyHash(a.hash(), u.Passwd, passwd, u.Salt) {
-			return a.createSession(ctx, u.ID, u.FirstName, u.LastName)
+			return a.createSession(ctx, u.ID, u.FirstName, u.LastName, option.UserIP, option.UserAgent)
 		}
 
 		return noSession, ErrPasswdNotMatched
@@ -48,7 +48,7 @@ func (a *Auth) SignInMobile(ctx context.Context, mobile, passwd string, option L
 			return noSession, err
 		}
 
-		return a.createSession(ctx, u.ID, u.FirstName, u.LastName)
+		return a.createSession(ctx, u.ID, u.FirstName, u.LastName, option.UserIP, option.UserAgent)
 	}
 
 	return noSession, err

@@ -14,3 +14,10 @@ type LoginOption struct {
 	// LastName last name. only use when CreateIfNotExists is true
 	LastName string
 }
+
+type ClientInfo struct {
+	// UserIP user's ip address
+	UserIP string
+	// UserAgent user's device info
+	UserAgent string
+}

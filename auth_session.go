@@ -9,8 +9,8 @@ import (
 
 var noUserID shardid.ID
 
-// SignOut sign out the user, and delete his refresh token
-func (a *Auth) SignOut(ctx context.Context, uid shardid.ID) error {
+// Logout sign out the user, and delete his refresh token
+func (a *Auth) Logout(ctx context.Context, uid shardid.ID) error {
 	return a.deleteUserToken(ctx, uid, "")
 }
 
@@ -35,7 +35,7 @@ func (a *Auth) IsAuthenticated(ctx context.Context, accessToken string) (shardid
 }
 
 // RefreshSession refresh access token and refresh token
-func (a *Auth) RefreshSession(ctx context.Context, refreshToken string) (Session, error) {
+func (a *Auth) RefreshSession(ctx context.Context, refreshToken string, clientInfo ClientInfo) (Session, error) {
 	token, err := jwt.ParseWithClaims(refreshToken, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return a.jwtSignKey, nil
 	})
@@ -57,12 +57,12 @@ func (a *Auth) RefreshSession(ctx context.Context, refreshToken string) (Session
 		return noSession, err
 	}
 
-	go a.deleteUserToken(ctx, uid, refreshToken) // nolint: errcheck
+	a.deleteUserToken(ctx, uid, refreshToken) // nolint: errcheck
 
 	u, err := a.getUserByID(ctx, uid)
 	if err != nil {
 		return noSession, err
 	}
 
-	return a.createSession(ctx, uid, u.FirstName, u.FirstName)
+	return a.createSession(ctx, uid, u.FirstName, u.FirstName, clientInfo.UserIP, clientInfo.UserAgent)
 }
