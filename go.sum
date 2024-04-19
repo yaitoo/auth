@@ -20,8 +20,8 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/yaitoo/async v1.0.4 h1:u+SWuJcSckgBOcMjMYz9IviojeCatDrdni3YNGLCiHY=
 github.com/yaitoo/async v1.0.4/go.mod h1:IpSO7Ei7AxiqLxFqDjN4rJaVlt8wm4ZxMXyyQaWmM1g=
-github.com/yaitoo/sqle v1.4.3 h1:7+O9tkGBYF523RRHYDfiFofTo/woB9bL8PuD35E4mgg=
-github.com/yaitoo/sqle v1.4.3/go.mod h1:Bv1PPG6hYZP2In3WKN1dBqYNJiWP0ZSLs6uEkRo2c9M=
+github.com/yaitoo/sqle v1.4.5-0.20240419033454-536481b4a359 h1:uBUsP/WZE3mC9sDI8QJHOaSmJGemDmRG8kWoWOHXG1Y=
+github.com/yaitoo/sqle v1.4.5-0.20240419033454-536481b4a359/go.mod h1:Bv1PPG6hYZP2In3WKN1dBqYNJiWP0ZSLs6uEkRo2c9M=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=

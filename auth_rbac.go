@@ -9,14 +9,15 @@ import (
 	"github.com/yaitoo/sqle"
 )
 
-// GetPerms get all permissions
-func (a *Auth) GetPerms(ctx context.Context) ([]Perm, error) {
+func (a *Auth) QueryPerms(ctx context.Context, where *sqle.WhereBuilder) ([]Perm, error) {
 	rows, err := a.db.
 		QueryBuilder(ctx, a.createBuilder().
-			Select("<prefix>perm"))
+			Select("<prefix>perm").
+			WithWhere(where).
+			End())
 
 	if err != nil {
-		a.logger.Error("auth: GetPerms",
+		a.logger.Error("auth: QueryPerms",
 			slog.String("tag", "db"),
 			slog.Any("err", err))
 		return nil, ErrBadDatabase
@@ -25,7 +26,7 @@ func (a *Auth) GetPerms(ctx context.Context) ([]Perm, error) {
 	err = rows.Bind(&items)
 
 	if err != nil {
-		a.logger.Error("auth: GetPerms:Bind",
+		a.logger.Error("auth: QueryPerms:Bind",
 			slog.String("tag", "db"),
 			slog.Any("err", err))
 		return nil, ErrBadDatabase
@@ -34,14 +35,15 @@ func (a *Auth) GetPerms(ctx context.Context) ([]Perm, error) {
 	return items, nil
 }
 
-// GetRoles get all roles
-func (a *Auth) GetRoles(ctx context.Context) ([]Role, error) {
+func (a *Auth) QueryRoles(ctx context.Context, where *sqle.WhereBuilder) ([]Role, error) {
 	rows, err := a.db.
 		QueryBuilder(ctx, a.createBuilder().
-			Select("<prefix>role"))
+			Select("<prefix>role").
+			WithWhere(where).
+			End())
 
 	if err != nil {
-		a.logger.Error("auth: GetRoles",
+		a.logger.Error("auth: QueryRoles",
 			slog.String("tag", "db"),
 			slog.Any("err", err))
 		return nil, ErrBadDatabase
@@ -50,13 +52,42 @@ func (a *Auth) GetRoles(ctx context.Context) ([]Role, error) {
 	err = rows.Bind(&items)
 
 	if err != nil {
-		a.logger.Error("auth: GetRoles:Bind",
+		a.logger.Error("auth: QueryRoles:Bind",
 			slog.String("tag", "db"),
 			slog.Any("err", err))
 		return nil, ErrBadDatabase
 	}
 
 	return items, nil
+}
+
+func (a *Auth) QueryUsers(ctx context.Context, where *sqle.WhereBuilder, limit int) (*sqle.LimitResult[User], error) {
+	query := sqle.NewQuery[User](a.db)
+
+	b := a.createBuilder().
+		Select("<prefix>user").
+		WithWhere(where).
+		End()
+	items, err := query.QueryLimit(ctx, b, nil, limit)
+	if err != nil {
+		a.logger.Error("auth: QueryUsers:QueryLimit",
+			slog.String("tag", "db"),
+			slog.Any("err", err))
+		return nil, ErrBadDatabase
+	}
+
+	total, err := query.Count(ctx, b)
+	if err != nil {
+		a.logger.Error("auth: QueryUsers:Count",
+			slog.String("tag", "db"),
+			slog.Any("err", err))
+		return nil, ErrBadDatabase
+	}
+
+	return &sqle.LimitResult[User]{
+		Items: items,
+		Total: total,
+	}, nil
 }
 
 // RegisterPerm create new permission if it doesn't exists

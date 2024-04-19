@@ -66,7 +66,7 @@ func TestRBAC(t *testing.T) {
 		{
 			name: "register_perm_should_work",
 			assert: func(r *require.Assertions) {
-				perms, err := au.GetPerms(context.Background())
+				perms, err := au.QueryPerms(context.Background())
 				r.NoError(err)
 
 				slices.ContainsFunc(perms, func(it Perm) bool {
@@ -78,7 +78,7 @@ func TestRBAC(t *testing.T) {
 		{
 			name: "create_role_should_work",
 			assert: func(r *require.Assertions) {
-				items, err := au.GetRoles(context.Background())
+				items, err := au.QueryRoles(context.Background())
 				r.NoError(err)
 
 				slices.ContainsFunc(items, func(it Role) bool {
