@@ -85,7 +85,7 @@ func (a *Auth) QueryUsers(ctx context.Context, where *sqle.WhereBuilder, limit i
 	return items, nil
 }
 
-func (a *Auth) QueryUserCount(ctx context.Context, where *sqle.WhereBuilder) (int64, error) {
+func (a *Auth) QueryUsersCount(ctx context.Context, where *sqle.WhereBuilder) (int64, error) {
 	query := sqle.NewQuery[User](a.db)
 
 	b := a.createBuilder().
