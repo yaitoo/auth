@@ -89,9 +89,10 @@ func (a *Auth) QueryUsersCount(ctx context.Context, where *sqle.WhereBuilder) (i
 	query := sqle.NewQuery[User](a.db)
 
 	b := a.createBuilder().
-		Select("<prefix>user").
-		WithWhere(where).
-		End()
+		Select("<prefix>user", "count(id) as c")
+
+	b.WithWhere(where)
+
 	total, err := query.Count(ctx, b)
 	if err != nil {
 		a.logger.Error("auth: QueryUserCount",
