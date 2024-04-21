@@ -52,10 +52,10 @@ func TestRBAC(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	err = au.AddRoleToUsers(context.Background(), ruRole1, ruUser1.Int64, ruUser2.Int64, ruUser3.Int64)
+	err = au.AddRoleUsers(context.Background(), ruRole1, ruUser1.Int64, ruUser2.Int64, ruUser3.Int64)
 	require.NoError(t, err)
 
-	err = au.AddUserToRoles(context.Background(), ruUser4.Int64, ruRole2, ruRole3, ruRole4)
+	err = au.AddUserRoles(context.Background(), ruUser4.Int64, ruRole2, ruRole3, ruRole4)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -98,7 +98,7 @@ func TestRBAC(t *testing.T) {
 				r.Equal(ruUser2.Int64, users[1])
 				r.Equal(ruUser3.Int64, users[2])
 
-				err = au.RemoveUsersFromRole(context.Background(), ruRole1, ruUser3.Int64)
+				err = au.RemoveRoleUsers(context.Background(), ruRole1, ruUser3.Int64)
 				r.NoError(err)
 
 				users, err = au.GetUsersByRole(context.Background(), ruRole1)
@@ -108,7 +108,7 @@ func TestRBAC(t *testing.T) {
 				r.Equal(ruUser1.Int64, users[0])
 				r.Equal(ruUser2.Int64, users[1])
 
-				roles, err := au.GetRolesByUser(context.Background(), ruUser4.Int64)
+				roles, err := au.GetUserRoles(context.Background(), ruUser4.Int64)
 				r.NoError(err)
 				r.Len(roles, 3)
 
@@ -121,10 +121,10 @@ func TestRBAC(t *testing.T) {
 				r.Equal(ruRole3, rIDs[1])
 				r.Equal(ruRole4, rIDs[2])
 
-				err = au.RemoveRolesFromUser(context.Background(), ruUser4.Int64, ruRole4)
+				err = au.RemoveUserRoles(context.Background(), ruUser4.Int64, ruRole4)
 				r.NoError(err)
 
-				roles, err = au.GetRolesByUser(context.Background(), ruUser4.Int64)
+				roles, err = au.GetUserRoles(context.Background(), ruUser4.Int64)
 				r.NoError(err)
 				r.Len(roles, 2)
 
@@ -161,7 +161,7 @@ func TestRBAC(t *testing.T) {
 				})
 				r.NoError(err)
 
-				err = au.AddUserToRoles(ctx, uid.Int64, rid)
+				err = au.AddUserRoles(ctx, uid.Int64, rid)
 				r.NoError(err)
 
 				err = au.GrantPerms(ctx, rid, "grant:view", "grant:update")

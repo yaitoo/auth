@@ -877,7 +877,7 @@ func (a *Auth) getPermTag(ctx context.Context, code string) (string, error) {
 	return "", ErrBadDatabase
 }
 
-func (a *Auth) updatePermTag(ctx context.Context, code, tag string) error {
+func (a *Auth) updatePerm(ctx context.Context, code, tag string) error {
 	_, err := a.db.
 		ExecBuilder(ctx, a.createBuilder().
 			Update("<prefix>perm").
@@ -886,7 +886,7 @@ func (a *Auth) updatePermTag(ctx context.Context, code, tag string) error {
 			Where("code = {code}").
 			Param("code", code))
 	if err != nil {
-		a.logger.Error("auth: updatePermTag",
+		a.logger.Error("auth: updatePerm",
 			slog.String("tag", "db"),
 			slog.String("code", code),
 			slog.String("perm_tag", tag),
