@@ -185,7 +185,7 @@ WHERE <prefix>role_perm.role_id = {role_id}`).
 		return nil, ErrBadDatabase
 	}
 
-	var items []auth.Perm
+	var items []Perm
 	err = rows.Bind(&items)
 	if err != nil {
 		a.logger.Error("auth: GetRolePerms:Bind",
