@@ -70,6 +70,59 @@ func (a *Auth) CreateRole(ctx context.Context, name string) (int, error) {
 	return int(id), nil
 }
 
+// UpdateRole update role name
+func (a *Auth) UpdateRole(ctx context.Context, id int, name string) error {
+	_, err := a.db.
+		ExecBuilder(ctx, a.createBuilder().
+			Update("<prefix>role").
+			Set("name", name).
+			Set("updated_at", time.Now()).
+			Where("id = {id}").
+			Param("id", id))
+
+	if err != nil {
+		a.logger.Error("auth: UpdateRole",
+			slog.String("tag", "db"),
+			slog.String("name", name),
+			slog.Any("err", err))
+		return ErrBadDatabase
+	}
+
+	return nil
+}
+
+// DeleteRole delete role, role_user, role_perm
+func (a *Auth) DeleteRole(ctx context.Context, id int) error {
+	err := a.db.Transaction(ctx, nil, func(ctx context.Context, tx *sqle.Tx) error {
+		_, err := tx.ExecBuilder(ctx, a.createBuilder().Delete("<prefix>role").Where("id = {id}").Param("id", id))
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.ExecBuilder(ctx, a.createBuilder().Delete("<prefix>role_user").Where("role_id = {role_id}").Param("role_id", id))
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.ExecBuilder(ctx, a.createBuilder().Delete("<prefix>role_perm").Where("role_id = {role_id}").Param("role_id", id))
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		a.logger.Error("auth: DeleteRole",
+			slog.String("tag", "db"),
+			slog.Int("role_id", id),
+			slog.Any("err", err))
+		return ErrBadDatabase
+	}
+
+	return nil
+}
+
 // GetRoleUsers get users by role id
 func (a *Auth) GetRoleUsers(ctx context.Context, rid int) ([]User, error) {
 	var items []User

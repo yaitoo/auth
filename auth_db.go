@@ -205,7 +205,7 @@ func (a *Auth) createLoginWithEmail(ctx context.Context, email, passwd, firstNam
 	txUserPending = true
 
 	now := time.Now()
-	u, txErr = a.createUser(ctx, txUser, id, passwd, firstName, lastName, now)
+	u, txErr = a.createUser(ctx, txUser, id, passwd, firstName, lastName, email, "", now)
 	if txErr != nil {
 		return u, txErr
 	}
@@ -272,7 +272,7 @@ func (a *Auth) createLoginWithEmail(ctx context.Context, email, passwd, firstNam
 	return u, nil
 }
 
-func (a *Auth) createUser(ctx context.Context, tx *sqle.Tx, id shardid.ID, passwd, firstName, lastName string, now time.Time) (User, error) {
+func (a *Auth) createUser(ctx context.Context, tx *sqle.Tx, id shardid.ID, passwd, firstName, lastName, email, mobile string, now time.Time) (User, error) {
 	u := User{
 		ID:        id,
 		Status:    UserStatusWaiting,
@@ -294,6 +294,8 @@ func (a *Auth) createUser(ctx context.Context, tx *sqle.Tx, id shardid.ID, passw
 		Set("last_name", lastName).
 		Set("passwd", u.Passwd).
 		Set("salt", u.Salt).
+		If(email != "").Set("email", masker.Email(email)).
+		If(mobile != "").Set("mobile", masker.Mobile(mobile)).
 		Set("created_at", now).
 		Set("updated_at", now).
 		End())
@@ -477,7 +479,7 @@ func (a *Auth) createLoginWithMobile(ctx context.Context, mobile, passwd, firstN
 	txUserPending = true
 
 	now := time.Now()
-	u, txErr = a.createUser(ctx, txUser, id, passwd, firstName, lastName, now)
+	u, txErr = a.createUser(ctx, txUser, id, passwd, firstName, lastName, "", mobile, now)
 	if txErr != nil {
 		return u, txErr
 	}

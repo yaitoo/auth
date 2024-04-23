@@ -23,12 +23,16 @@ const (
 // User user info
 type User struct {
 	ID        shardid.ID `json:"id,omitempty"`
-	Status    UserStatus `json:"status"`
+	Status    UserStatus `json:"status,omitempty"`
 	FirstName string     `json:"firstName,omitempty"`
 	LastName  string     `json:"lastName,omitempty"`
 	// Passwd the hash of user's password with salt
-	Passwd    string    `json:"-"`
-	Salt      string    `json:"-"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	Passwd string `json:"-"`
+	Salt   string `json:"-"`
+
+	Email  string `json:"email,omitempty"`
+	Mobile string `json:"mobile,omitempty"`
+
+	CreatedAt time.Time `json:"createdAt,omitempty"`
+	UpdatedAt time.Time `json:"updatedAt,omitempty"`
 }

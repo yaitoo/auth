@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS `<prefix>user` (
   `last_name` varchar(255) NOT NULL,
   `passwd` varchar(255) NOT NULL,
   `salt` varchar(36) NOT NULL,
+  `email` VARCHAR(125) NULL,
+  `mobile` VARCHAR(25) NULL,
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`)
