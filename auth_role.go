@@ -128,7 +128,7 @@ func (a *Auth) GetRoleUsers(ctx context.Context, rid int) ([]User, error) {
 	var items []User
 	rows, err := a.db.
 		QueryBuilder(ctx, a.createBuilder().
-			SQL(`SELECT <prefix>user_id as id
+			SQL(`SELECT user_id as id
 FROM <prefix>role_user
 WHERE role_id = {role_id}`).
 			Param("role_id", rid))
@@ -150,12 +150,12 @@ WHERE role_id = {role_id}`).
 		return nil, ErrBadDatabase
 	}
 
-	for _, it := range items {
+	for i, it := range items {
 		err := a.db.On(it.ID).
 			QueryRowBuilder(ctx, a.createBuilder().
 				Select("<prefix>user").
 				Where("id = {id}").Param("id", it.ID.Int64)).
-			Bind(&it)
+			Bind(&items[i])
 
 		if err != nil {
 			a.logger.Error("auth: GetRoleUsers:GetUser",
@@ -173,8 +173,34 @@ WHERE role_id = {role_id}`).
 func (a *Auth) AddRoleUsers(ctx context.Context, rid int, uIDs ...int64) error {
 	return a.db.Transaction(ctx, &sql.TxOptions{}, func(ctx context.Context, tx *sqle.Tx) error {
 		now := time.Now()
-		var err error
+		var (
+			err error
+			n   int
+			c   int
+		)
 		for _, uid := range uIDs {
+
+			err = tx.QueryRowBuilder(ctx,
+				a.createBuilder().
+					Select("<prefix>", "count(user_id) as c").
+					Where("role_id = {role_id} AND user_id = {user_id}").
+					Param("role_id", rid).
+					Param("user_id", uid)).
+				Scan(&c)
+
+			if err != nil {
+				a.logger.Error("auth: AddRoleUsers:Exists",
+					slog.String("tag", "db"),
+					slog.Any("err", err))
+				return ErrBadDatabase
+			}
+
+			if c > 0 {
+				continue
+			}
+
+			n++
+
 			_, err = tx.ExecBuilder(ctx, a.createBuilder().
 				Insert("<prefix>role_user").
 				Set("role_id", rid).
@@ -182,12 +208,26 @@ func (a *Auth) AddRoleUsers(ctx context.Context, rid int, uIDs ...int64) error {
 				Set("created_at", now).
 				End())
 			if err != nil {
-				a.logger.Error("auth: AddRoleToUsers",
+				a.logger.Error("auth: AddRoleUsers",
 					slog.String("tag", "db"),
 					slog.Any("err", err))
 				return ErrBadDatabase
 			}
 		}
+
+		_, err = tx.ExecBuilder(ctx, a.createBuilder().
+			Update("<prefix>role").
+			Set("user_count", n).
+			Where("id = {id}").
+			Param("id", rid))
+
+		if err != nil {
+			a.logger.Error("auth: AddRoleUsers:UserCount",
+				slog.String("tag", "db"),
+				slog.Any("err", err))
+			return ErrBadDatabase
+		}
+
 		return nil
 	})
 
@@ -204,12 +244,40 @@ func (a *Auth) RemoveRoleUsers(ctx context.Context, rid int, uIDs ...int64) erro
 				Param("role_id", rid).
 				Param("user_id", uid))
 			if err != nil {
-				a.logger.Error("auth: RemoveRolesFromUser",
+				a.logger.Error("auth: RemoveRoleUsers",
 					slog.String("tag", "db"),
 					slog.Any("err", err))
 				return ErrBadDatabase
 			}
 		}
+
+		var n int
+		err = tx.QueryRowBuilder(ctx,
+			a.createBuilder().
+				Select("<prefix>role_user", "count(user_id) as n").
+				Where("role_id = {role_id}").Param("role_id", rid)).
+			Scan(&n)
+
+		if err != nil {
+			a.logger.Error("auth: RemoveRoleUsers:Count",
+				slog.String("tag", "db"),
+				slog.Any("err", err))
+			return ErrBadDatabase
+		}
+
+		_, err = tx.ExecBuilder(ctx, a.createBuilder().
+			Update("<prefix>role").
+			Set("user_count", n).
+			Where("id = {id}").
+			Param("id", rid))
+
+		if err != nil {
+			a.logger.Error("auth: RemoveRoleUsers:UserCount",
+				slog.String("tag", "db"),
+				slog.Any("err", err))
+			return ErrBadDatabase
+		}
+
 		return nil
 	})
 }

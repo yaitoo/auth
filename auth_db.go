@@ -294,8 +294,8 @@ func (a *Auth) createUser(ctx context.Context, tx *sqle.Tx, id shardid.ID, passw
 		Set("last_name", lastName).
 		Set("passwd", u.Passwd).
 		Set("salt", u.Salt).
-		If(email != "").Set("email", masker.Email(email)).
-		If(mobile != "").Set("mobile", masker.Mobile(mobile)).
+		Set("email", masker.Email(email)).
+		Set("mobile", masker.Mobile(mobile)).
 		Set("created_at", now).
 		Set("updated_at", now).
 		End())
