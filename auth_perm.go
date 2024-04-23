@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/yaitoo/auth"
 	"github.com/yaitoo/sqle"
 )
 
@@ -169,7 +168,7 @@ func (a *Auth) RevokePerms(ctx context.Context, rid int, codes ...string) error 
 }
 
 // GetRolePerms get role's permissions
-func (a *Auth) GetRolePerms(ctx context.Context, rid int) ([]auth.Perm, error) {
+func (a *Auth) GetRolePerms(ctx context.Context, rid int) ([]Perm, error) {
 	rows, err := a.db.QueryBuilder(ctx, a.createBuilder().
 		SQL(`SELECT <prefix>perm.*
 FROM <prefix>role_perm
