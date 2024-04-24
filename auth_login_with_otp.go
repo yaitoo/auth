@@ -9,7 +9,7 @@ import (
 // LoginWithOTP sign in with email and otp.
 func (a *Auth) LoginWithOTP(ctx context.Context, email, otp string) (Session, error) {
 
-	u, err := a.getUserByEmail(ctx, email)
+	u, err := a.GetUserByEmail(ctx, email)
 
 	if err != nil {
 		return noSession, ErrEmailNotFound
@@ -30,7 +30,7 @@ func (a *Auth) LoginWithOTP(ctx context.Context, email, otp string) (Session, er
 
 // LoginMobileWithOTP sign in with mobile and otp.
 func (a *Auth) LoginMobileWithOTP(ctx context.Context, mobile, otp string) (Session, error) {
-	u, err := a.getUserByMobile(ctx, mobile)
+	u, err := a.GetUserByMobile(ctx, mobile)
 
 	if err != nil {
 		return noSession, ErrMobileNotFound

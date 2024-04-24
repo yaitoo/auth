@@ -36,16 +36,16 @@ func TestRBAC(t *testing.T) {
 	ruUser4 := au.genUser.Next()
 
 	err = au.db.Transaction(context.Background(), nil, func(ctx context.Context, tx *sqle.Tx) error {
-		_, err = au.createUser(context.Background(), tx, ruUser1, "", "", "", time.Now())
+		_, err = au.createUser(context.Background(), tx, ruUser1, UserStatusActivated, "", "", "", "", "", time.Now())
 		require.NoError(t, err)
 
-		_, err = au.createUser(context.Background(), tx, ruUser2, "", "", "", time.Now())
+		_, err = au.createUser(context.Background(), tx, ruUser2, UserStatusActivated, "", "", "", "", "", time.Now())
 		require.NoError(t, err)
 
-		_, err = au.createUser(context.Background(), tx, ruUser3, "", "", "", time.Now())
+		_, err = au.createUser(context.Background(), tx, ruUser3, UserStatusActivated, "", "", "", "", "", time.Now())
 		require.NoError(t, err)
 
-		_, err = au.createUser(context.Background(), tx, ruUser4, "", "", "", time.Now())
+		_, err = au.createUser(context.Background(), tx, ruUser4, UserStatusActivated, "", "", "", "", "", time.Now())
 		require.NoError(t, err)
 
 		return nil
@@ -55,7 +55,13 @@ func TestRBAC(t *testing.T) {
 	err = au.AddRoleUsers(context.Background(), ruRole1, ruUser1.Int64, ruUser2.Int64, ruUser3.Int64)
 	require.NoError(t, err)
 
-	err = au.AddUserRoles(context.Background(), ruUser4.Int64, ruRole2, ruRole3, ruRole4)
+	err = au.AddRoleUsers(context.Background(), ruRole2, ruUser4.Int64)
+	require.NoError(t, err)
+
+	err = au.AddRoleUsers(context.Background(), ruRole3, ruUser4.Int64)
+	require.NoError(t, err)
+
+	err = au.AddRoleUsers(context.Background(), ruRole4, ruUser4.Int64)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -98,7 +104,7 @@ func TestRBAC(t *testing.T) {
 				r.Equal(ruUser2.Int64, users[1])
 				r.Equal(ruUser3.Int64, users[2])
 
-				err = au.RemoveRoleUsers(context.Background(), ruRole1, ruUser3.Int64)
+				err = au.DeleteRoleUsers(context.Background(), ruRole1, ruUser3.Int64)
 				r.NoError(err)
 
 				users, err = au.GetUsersByRole(context.Background(), ruRole1)
@@ -121,7 +127,7 @@ func TestRBAC(t *testing.T) {
 				r.Equal(ruRole3, rIDs[1])
 				r.Equal(ruRole4, rIDs[2])
 
-				err = au.RemoveUserRoles(context.Background(), ruUser4.Int64, ruRole4)
+				err = au.DeleteRoleUsers(context.Background(), ruRole4, ruUser4.Int64)
 				r.NoError(err)
 
 				roles, err = au.GetUserRoles(context.Background(), ruUser4.Int64)
@@ -156,12 +162,12 @@ func TestRBAC(t *testing.T) {
 
 				uid := au.genUser.Next()
 				err = au.db.Transaction(ctx, nil, func(ctx context.Context, tx *sqle.Tx) error {
-					_, err := au.createUser(ctx, tx, uid, "", "", "", time.Now())
+					_, err := au.createUser(ctx, tx, uid, UserStatusActivated, "", "", "", "", "", time.Now())
 					return err
 				})
 				r.NoError(err)
 
-				err = au.AddUserRoles(ctx, uid.Int64, rid)
+				err = au.AddRoleUsers(ctx, rid, uid.Int64)
 				r.NoError(err)
 
 				err = au.GrantPerms(ctx, rid, "grant:view", "grant:update")

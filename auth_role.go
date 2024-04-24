@@ -179,10 +179,13 @@ func (a *Auth) AddRoleUsers(ctx context.Context, rid int, uIDs ...int64) error {
 			c   int
 		)
 		for _, uid := range uIDs {
+			if uid <= 0 {
+				continue
+			}
 
 			err = tx.QueryRowBuilder(ctx,
 				a.createBuilder().
-					Select("<prefix>", "count(user_id) as c").
+					Select("<prefix>role_user", "count(user_id) as c").
 					Where("role_id = {role_id} AND user_id = {user_id}").
 					Param("role_id", rid).
 					Param("user_id", uid)).
@@ -195,6 +198,7 @@ func (a *Auth) AddRoleUsers(ctx context.Context, rid int, uIDs ...int64) error {
 				return ErrBadDatabase
 			}
 
+			// exists, skip to add again
 			if c > 0 {
 				continue
 			}
@@ -233,8 +237,8 @@ func (a *Auth) AddRoleUsers(ctx context.Context, rid int, uIDs ...int64) error {
 
 }
 
-// RemoveRoleUsers remove users from the role
-func (a *Auth) RemoveRoleUsers(ctx context.Context, rid int, uIDs ...int64) error {
+// DeleteRoleUsers delete users from the role
+func (a *Auth) DeleteRoleUsers(ctx context.Context, rid int, uIDs ...int64) error {
 	return a.db.Transaction(ctx, &sql.TxOptions{}, func(ctx context.Context, tx *sqle.Tx) error {
 		var err error
 		for _, uid := range uIDs {

@@ -43,65 +43,6 @@ func (a *Auth) getUserByID(ctx context.Context, uid shardid.ID) (User, error) {
 	return u, nil
 }
 
-func (a *Auth) getUserByEmail(ctx context.Context, email string) (User, error) {
-	var u User
-
-	h := generateHash(a.hash(), email, "")
-
-	db, err := a.db.OnDHT(h, a.dhtEmail)
-	if err != nil {
-		return u, err
-	}
-
-	var userID shardid.ID
-	err = db.
-		QueryRowBuilder(ctx, a.createBuilder().
-			Select("<prefix>user_email", "user_id").
-			Where("hash = {hash}").
-			Param("hash", generateHash(a.hash(), email, ""))).
-		Scan(&userID)
-
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return u, ErrEmailNotFound
-		}
-		a.logger.Error("auth: getUserByEmail",
-			slog.String("pos", "user_email"),
-			slog.String("tag", "db"),
-			slog.String("email", email),
-			slog.Any("err", err))
-		return u, ErrBadDatabase
-	}
-
-	err = a.db.On(userID).
-		QueryRowBuilder(ctx, a.createBuilder().
-			Select("<prefix>user").
-			Where("id = {id}").Param("id", userID)).
-		Bind(&u)
-
-	if err != nil {
-		// email exists, but user_id can't be found. so data should be corrupted.
-		if errors.Is(err, sql.ErrNoRows) {
-			a.logger.Error("auth: getUserByEmail",
-				slog.String("pos", "user"),
-				slog.String("tag", "db"),
-				slog.String("email", email),
-				slog.Int64("user_id", userID.Int64),
-				slog.Any("err", "email/user is corrupted"))
-
-			return u, ErrBadDatabase
-		}
-		a.logger.Error("auth: getUserByEmail",
-			slog.String("pos", "user"),
-			slog.String("tag", "db"),
-			slog.String("email", email),
-			slog.Any("err", err))
-		return u, ErrBadDatabase
-	}
-
-	return u, nil
-}
-
 func (a *Auth) getUserIDByEmail(ctx context.Context, email string) (shardid.ID, error) {
 	var userID shardid.ID
 
@@ -123,7 +64,7 @@ func (a *Auth) getUserIDByEmail(ctx context.Context, email string) (shardid.ID, 
 		if errors.Is(err, sql.ErrNoRows) {
 			return userID, ErrEmailNotFound
 		}
-		a.logger.Error("auth: getUserByEmail",
+		a.logger.Error("auth: GetUserByEmail",
 			slog.String("pos", "user_email"),
 			slog.String("tag", "db"),
 			slog.String("email", email),
@@ -153,129 +94,10 @@ func (a *Auth) deleteUserToken(ctx context.Context, uid shardid.ID, token string
 	return nil
 }
 
-func (a *Auth) createLoginWithEmail(ctx context.Context, email, passwd, firstName, lastName string) (User, error) {
-	var (
-		txUser, txEmail *sqle.Tx
-		txErr           error
-
-		txUserPending, txEmailPending bool
-		u                             User
-	)
-	id := a.genUser.Next()
-
-	defer func() {
-		// transaction fails, try to rollback
-		if txErr != nil {
-			var err error
-			// txEmail is not fault-tolerant, so rollback it first
-			if txEmailPending {
-				err = txEmail.Rollback()
-				if err != nil {
-					a.logger.Error("auth: createLoginWithEmail",
-						slog.Any("err", err),
-						slog.String("tag", "db"),
-						slog.String("step", "createEmail:Rollback"),
-						slog.String("email", email))
-				}
-			}
-
-			// txtUser is fault-tolerant
-			if txUserPending {
-				err = txUser.Rollback()
-				if err != nil {
-					a.logger.Error("auth: createLoginWithEmail",
-						slog.Any("err", err),
-						slog.String("tag", "db"),
-						slog.String("step", "createUser:Rollback"),
-						slog.Int64("user_id", id.Int64))
-				}
-			}
-		}
-	}()
-
-	txUser, txErr = a.db.On(id).BeginTx(ctx, &sql.TxOptions{})
-	if txErr != nil {
-		a.logger.Error("auth: createLoginWithEmail",
-			slog.Any("err", txErr),
-			slog.String("tag", "db"),
-			slog.String("step", "txUser:BeginTx"),
-			slog.Int64("user_id", id.Int64))
-		return u, ErrBadDatabase
-	}
-	txUserPending = true
-
-	now := time.Now()
-	u, txErr = a.createUser(ctx, txUser, id, passwd, firstName, lastName, email, "", now)
-	if txErr != nil {
-		return u, txErr
-	}
-
-	_, txErr = a.createUserProfile(ctx, txUser, id, email, "", now)
-	if txErr != nil {
-		return u, txErr
-	}
-
-	// commit it first before txEmail starts. Because concurrency transaction doesn't work on SQLite
-	txErr = txUser.Commit()
-	if txErr != nil {
-		a.logger.Error("auth: createLoginWithEmail",
-			slog.Any("err", txErr),
-			slog.String("tag", "db"),
-			slog.String("step", "txtUser:Commit"),
-			slog.String("email", email))
-		return u, ErrBadDatabase
-	}
-	// txUser is committed, it is impossible to rollback anymore.
-	// User and UserProfile have to be deleted manually when email fails to commit
-	txUserPending = false
-
-	h := generateHash(a.hash(), email, "")
-
-	var db *sqle.Context
-	db, txErr = a.db.OnDHT(h, a.dhtEmail)
-
-	if txErr != nil {
-		return u, txErr
-	}
-
-	txEmail, txErr = db.BeginTx(ctx, nil)
-	if txErr != nil {
-		a.logger.Error("auth: createLoginWithEmail",
-			slog.Any("err", txErr),
-			slog.String("tag", "db"),
-			slog.String("step", "txEmail:BeginTx"),
-			slog.String("email", email))
-		return u, ErrBadDatabase
-	}
-	txEmailPending = true
-
-	txErr = a.createUserEmail(ctx, txEmail, id, email, h, now)
-	if txErr != nil {
-		return u, txErr
-	}
-
-	txErr = txEmail.Commit()
-	if txErr != nil {
-		a.logger.Error("auth: createLoginWithEmail",
-			slog.Any("err", txErr),
-			slog.String("tag", "db"),
-			slog.String("step", "txEmail:Commit"),
-			slog.String("email", email))
-
-		// User/UserProfile are fault-tolerant, so ignore errcheck
-		a.deleteUser(ctx, id)        // nolint: errcheck
-		a.deleteUserProfile(ctx, id) // nolint: errcheck
-
-		return u, ErrBadDatabase
-	}
-
-	return u, nil
-}
-
-func (a *Auth) createUser(ctx context.Context, tx *sqle.Tx, id shardid.ID, passwd, firstName, lastName, email, mobile string, now time.Time) (User, error) {
+func (a *Auth) createUser(ctx context.Context, tx *sqle.Tx, id shardid.ID, status UserStatus, passwd, firstName, lastName, email, mobile string, now time.Time) (User, error) {
 	u := User{
 		ID:        id,
-		Status:    UserStatusWaiting,
+		Status:    status,
 		FirstName: firstName,
 		LastName:  lastName,
 		Salt:      randStr(10, dicAlphaNumber),
@@ -289,7 +111,7 @@ func (a *Auth) createUser(ctx context.Context, tx *sqle.Tx, id shardid.ID, passw
 	_, err := tx.ExecBuilder(ctx, a.createBuilder().
 		Insert("<prefix>user").
 		Set("id", id).
-		Set("status", UserStatusWaiting).
+		Set("status", status).
 		Set("first_name", firstName).
 		Set("last_name", lastName).
 		Set("passwd", u.Passwd).
@@ -427,182 +249,24 @@ func (a *Auth) createUserEmail(ctx context.Context, tx *sqle.Tx, userID shardid.
 	return nil
 }
 
-func (a *Auth) createLoginWithMobile(ctx context.Context, mobile, passwd, firstName, lastName string) (User, error) {
-	var (
-		txUser, txMobile *sqle.Tx
-		txErr            error
+func (a *Auth) deleteUserEmail(ctx context.Context, tx *sqle.Tx, userID shardid.ID, hash string) error {
 
-		txUserPending, txMobilePending bool
-		u                              User
-	)
-	id := a.genUser.Next()
-
-	defer func() {
-		// transaction fails, try to rollback
-		if txErr != nil {
-			var err error
-			// txEmail is not fault-tolerant, so rollback it first
-			if txMobilePending {
-				err = txMobile.Rollback()
-				if err != nil {
-					a.logger.Error("auth: createLoginWithMobile",
-						slog.Any("err", err),
-						slog.String("tag", "db"),
-						slog.String("step", "createMobile:Rollback"),
-						slog.String("mobile", mobile))
-				}
-			}
-
-			// txtUser is fault-tolerant
-			if txUserPending {
-				err = txUser.Rollback()
-				if err != nil {
-					a.logger.Error("auth: createLoginWithMobile",
-						slog.Any("err", err),
-						slog.String("tag", "db"),
-						slog.String("step", "createUser:Rollback"),
-						slog.Int64("user_id", id.Int64))
-				}
-			}
-		}
-	}()
-
-	txUser, txErr = a.db.On(id).BeginTx(ctx, &sql.TxOptions{})
-	if txErr != nil {
-		a.logger.Error("auth: createLoginWithMobile",
-			slog.Any("err", txErr),
-			slog.String("tag", "db"),
-			slog.String("step", "BeginTx"),
-			slog.Int64("user_id", id.Int64))
-		return u, ErrBadDatabase
-	}
-	txUserPending = true
-
-	now := time.Now()
-	u, txErr = a.createUser(ctx, txUser, id, passwd, firstName, lastName, "", mobile, now)
-	if txErr != nil {
-		return u, txErr
-	}
-
-	_, txErr = a.createUserProfile(ctx, txUser, id, "", mobile, now)
-	if txErr != nil {
-		return u, txErr
-	}
-
-	// commit it first before txEmail starts. Because concurrency transaction doesn't work on SQLite
-	txErr = txUser.Commit()
-	if txErr != nil {
-		a.logger.Error("auth: createLoginWithMobile",
-			slog.Any("err", txErr),
-			slog.String("tag", "db"),
-			slog.String("step", "txtUser:Commit"),
-			slog.String("mobile", mobile))
-		return u, ErrBadDatabase
-	}
-	// txUser is committed, it is impossible to rollback anymore.
-	// User and UserProfile have to be deleted manually when email fails to commit
-	txUserPending = false
-
-	h := generateHash(a.hash(), mobile, "")
-
-	var db *sqle.Context
-	db, txErr = a.db.OnDHT(h, a.dhtMobile)
-
-	if txErr != nil {
-		return u, txErr
-	}
-
-	txMobile, txErr = db.BeginTx(ctx, nil)
-	if txErr != nil {
-		a.logger.Error("auth: createLoginWithMobile",
-			slog.Any("err", txErr),
-			slog.String("tag", "db"),
-			slog.String("step", "txMobile:BeginTx"),
-			slog.String("mobile", mobile))
-		return u, ErrBadDatabase
-	}
-	txMobilePending = true
-
-	txErr = a.createUserMobile(ctx, txMobile, id, mobile, h, now)
-	if txErr != nil {
-		return u, txErr
-	}
-
-	txErr = txMobile.Commit()
-	if txErr != nil {
-		a.logger.Error("auth: createLoginWithMobile",
-			slog.Any("err", txErr),
-			slog.String("tag", "db"),
-			slog.String("step", "txMobile:Commit"),
-			slog.String("mobile", mobile))
-
-		// User/UserProfile are fault-tolerant, so ignore errcheck
-		a.deleteUser(ctx, id)        // nolint: errcheck
-		a.deleteUserProfile(ctx, id) // nolint: errcheck
-
-		return u, ErrBadDatabase
-	}
-
-	return u, nil
-}
-
-func (a *Auth) getUserByMobile(ctx context.Context, mobile string) (User, error) {
-	var u User
-
-	h := generateHash(a.hash(), mobile, "")
-
-	db, err := a.db.OnDHT(h, a.dhtMobile)
-	if err != nil {
-		return u, err
-	}
-
-	var userID shardid.ID
-	err = db.
-		QueryRowBuilder(ctx, a.createBuilder().
-			Select("<prefix>user_mobile", "user_id").
-			Where("hash = {hash}").
-			Param("hash", generateHash(a.hash(), mobile, ""))).
-		Scan(&userID)
+	_, err := tx.ExecBuilder(ctx, a.createBuilder().
+		Delete("<prefix>user_email").
+		Where("hash = {hash} AND user_id = {user_id}").
+		Param("hash", hash).
+		Param("user_id", userID.Int64))
 
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return u, ErrMobileNotFound
-		}
-		a.logger.Error("auth: getUserByMobile",
-			slog.String("pos", "user_mobile"),
+		a.logger.Error("auth: deleteUserEmail",
 			slog.String("tag", "db"),
-			slog.String("mobile", mobile),
+			slog.Int64("user_id", userID.Int64),
+			slog.String("hash", hash),
 			slog.Any("err", err))
-		return u, ErrBadDatabase
+		return ErrBadDatabase
 	}
 
-	err = a.db.On(userID).
-		QueryRowBuilder(ctx, a.createBuilder().
-			Select("<prefix>user").
-			Where("id = {id}").Param("id", userID)).
-		Bind(&u)
-
-	if err != nil {
-		// mobile exists, but user_id can't be found. so data should be corrupted.
-		if errors.Is(err, sql.ErrNoRows) {
-			a.logger.Error("auth: getUserBymobile",
-				slog.String("pos", "user"),
-				slog.String("tag", "db"),
-				slog.String("mobile", mobile),
-				slog.Int64("user_id", userID.Int64),
-				slog.Any("err", "mobile/user is corrupted"))
-
-			return u, ErrBadDatabase
-		}
-		a.logger.Error("auth: getUserByMobile",
-			slog.String("pos", "user"),
-			slog.String("tag", "db"),
-			slog.String("mobile", mobile),
-			slog.Any("err", err))
-		return u, ErrBadDatabase
-	}
-
-	return u, nil
+	return nil
 }
 
 func (a *Auth) getUserIDByMobile(ctx context.Context, mobile string) (shardid.ID, error) {
@@ -626,7 +290,7 @@ func (a *Auth) getUserIDByMobile(ctx context.Context, mobile string) (shardid.ID
 		if errors.Is(err, sql.ErrNoRows) {
 			return userID, ErrMobileNotFound
 		}
-		a.logger.Error("auth: getUserByMobile",
+		a.logger.Error("auth: GetUserByMobile",
 			slog.String("pos", "user_mobile"),
 			slog.String("tag", "db"),
 			slog.String("mobile", mobile),
@@ -653,6 +317,26 @@ func (a *Auth) createUserMobile(ctx context.Context, tx *sqle.Tx, userID shardid
 			slog.String("tag", "db"),
 			slog.Int64("user_id", userID.Int64),
 			slog.String("mobile", mobile),
+			slog.Any("err", err))
+		return ErrBadDatabase
+	}
+
+	return nil
+}
+
+func (a *Auth) deleteUserMobile(ctx context.Context, tx *sqle.Tx, userID shardid.ID, hash string) error {
+
+	_, err := tx.ExecBuilder(ctx, a.createBuilder().
+		Delete("<prefix>user_mobile").
+		Where("hash = {hash} AND user_id = {user_id}").
+		Param("hash", hash).
+		Param("user_id", userID.Int64))
+
+	if err != nil {
+		a.logger.Error("auth: createUserMobile",
+			slog.String("tag", "db"),
+			slog.Int64("user_id", userID.Int64),
+			slog.String("hash", hash),
 			slog.Any("err", err))
 		return ErrBadDatabase
 	}

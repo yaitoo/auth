@@ -34,7 +34,7 @@ func TestLoginWithOTP(t *testing.T) {
 			email:     "otp_not_matched@sign_in_with_otp.com",
 			wantedErr: ErrOTPNotMatched,
 			setup: func(r *require.Assertions) string {
-				_, err := authTest.createLoginWithEmail(context.Background(), "otp_not_matched@sign_in_with_otp.com", "abc123", "", "")
+				_, err := authTest.CreateUser(context.Background(), UserStatusWaiting, "otp_not_matched@sign_in_with_otp.com", "", "abc123", "", "")
 				r.NoError(err)
 
 				return ""
@@ -44,7 +44,7 @@ func TestLoginWithOTP(t *testing.T) {
 			name:  "otp_should_work",
 			email: "otp@sign_in_with_otp.com",
 			setup: func(r *require.Assertions) string {
-				u, err := authTest.createLoginWithEmail(context.Background(), "otp@sign_in_with_otp.com", "abc123", "", "")
+				u, err := authTest.CreateUser(context.Background(), UserStatusWaiting, "otp@sign_in_with_otp.com", "", "abc123", "", "")
 				r.NoError(err)
 
 				pd, err := authTest.getUserProfileData(context.Background(), u.ID)
@@ -113,7 +113,7 @@ func TestLoginMobileWithOTP(t *testing.T) {
 			mobile:    "1+222333444",
 			wantedErr: ErrOTPNotMatched,
 			setup: func(r *require.Assertions) string {
-				_, err := authTest.createLoginWithMobile(context.Background(), "1+222333444", "abc123", "", "")
+				_, err := authTest.CreateUser(context.Background(), UserStatusActivated, "", "1+222333444", "abc123", "", "")
 				r.NoError(err)
 
 				return ""
@@ -123,7 +123,7 @@ func TestLoginMobileWithOTP(t *testing.T) {
 			name:   "otp_should_work",
 			mobile: "1+333444555",
 			setup: func(r *require.Assertions) string {
-				u, err := authTest.createLoginWithMobile(context.Background(), "1+333444555", "abc123", "", "")
+				u, err := authTest.CreateUser(context.Background(), UserStatusActivated, "", "1+333444555", "abc123", "", "")
 				r.NoError(err)
 
 				pd, err := authTest.getUserProfileData(context.Background(), u.ID)

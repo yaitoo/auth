@@ -10,7 +10,7 @@ func (a *Auth) CreateLoginCode(ctx context.Context, email string, option LoginOp
 	id, err := a.getUserIDByEmail(ctx, email)
 
 	if option.CreateIfNotExists && errors.Is(err, ErrEmailNotFound) {
-		u, err := a.createLoginWithEmail(ctx, email, randStr(12, dicAlphaNumber), option.FirstName, option.LastName)
+		u, err := a.CreateUser(ctx, UserStatusWaiting, email, "", randStr(12, dicAlphaNumber), option.FirstName, option.LastName)
 		if err != nil {
 			return "", err
 		}
@@ -23,7 +23,7 @@ func (a *Auth) CreateLoginCode(ctx context.Context, email string, option LoginOp
 
 // LoginWithCode sign in with email and code.
 func (a *Auth) LoginWithCode(ctx context.Context, email, code string) (Session, error) {
-	u, err := a.getUserByEmail(ctx, email)
+	u, err := a.GetUserByEmail(ctx, email)
 	if err != nil {
 		return noSession, err
 	}
@@ -41,7 +41,7 @@ func (a *Auth) CreateLoginMobileCode(ctx context.Context, mobile string, option 
 	id, err := a.getUserIDByMobile(ctx, mobile)
 
 	if option.CreateIfNotExists && errors.Is(err, ErrMobileNotFound) {
-		u, err := a.createLoginWithMobile(ctx, mobile, randStr(12, dicAlphaNumber), option.FirstName, option.LastName)
+		u, err := a.CreateUser(ctx, UserStatusWaiting, "", mobile, randStr(12, dicAlphaNumber), option.FirstName, option.LastName)
 		if err != nil {
 			return "", err
 		}
@@ -54,7 +54,7 @@ func (a *Auth) CreateLoginMobileCode(ctx context.Context, mobile string, option 
 
 // LoginMobileWithCode sign in with mobile and code.
 func (a *Auth) LoginMobileWithCode(ctx context.Context, mobile, code string) (Session, error) {
-	u, err := a.getUserByMobile(ctx, mobile)
+	u, err := a.GetUserByMobile(ctx, mobile)
 	if err != nil {
 		return noSession, err
 	}

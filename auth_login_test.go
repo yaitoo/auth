@@ -41,7 +41,7 @@ func TestLogin(t *testing.T) {
 			passwd:    "not_abc123",
 			wantedErr: ErrPasswdNotMatched,
 			setup: func(r *require.Assertions) func() {
-				_, err := authTest.createLoginWithEmail(context.Background(), "passwd_not_matched@mail.com", "abc123", "", "")
+				_, err := authTest.CreateUser(context.Background(), UserStatusWaiting, "passwd_not_matched@mail.com", "", "abc123", "", "")
 
 				r.NoError(err)
 
@@ -53,7 +53,7 @@ func TestLogin(t *testing.T) {
 			email:  "passwd@mail.com",
 			passwd: "abc123",
 			setup: func(r *require.Assertions) func() {
-				_, err := authTest.createLoginWithEmail(context.Background(), "passwd@mail.com", "abc123", "", "")
+				_, err := authTest.CreateUser(context.Background(), UserStatusWaiting, "passwd@mail.com", "", "abc123", "", "")
 
 				r.NoError(err)
 
@@ -142,7 +142,7 @@ func TestLoginMobile(t *testing.T) {
 			passwd:    "not_abc123",
 			wantedErr: ErrPasswdNotMatched,
 			setup: func(r *require.Assertions) func() {
-				_, err := authTest.createLoginWithMobile(context.Background(), "1-333444555", "abc123", "", "")
+				_, err := authTest.CreateUser(context.Background(), UserStatusWaiting, "", "1-333444555", "abc123", "", "")
 
 				r.NoError(err)
 
@@ -154,7 +154,7 @@ func TestLoginMobile(t *testing.T) {
 			mobile: "1-444555666",
 			passwd: "abc123",
 			setup: func(r *require.Assertions) func() {
-				_, err := authTest.createLoginWithMobile(context.Background(), "1-444555666", "abc123", "", "")
+				_, err := authTest.CreateUser(context.Background(), UserStatusWaiting, "", "1-444555666", "abc123", "", "")
 
 				r.NoError(err)
 

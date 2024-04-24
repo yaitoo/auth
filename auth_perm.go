@@ -139,7 +139,7 @@ func (a *Auth) RevokePerms(ctx context.Context, rid int, codes ...string) error 
 		}
 		var n int
 		err = tx.QueryRowBuilder(ctx, a.createBuilder().
-			Select("<prefix>role_pem", "count(perm_code) as n").
+			Select("<prefix>role_perm", "count(perm_code) as n").
 			Where("role_id = {role_id}").
 			Param("role_id", rid)).Scan(&n)
 
