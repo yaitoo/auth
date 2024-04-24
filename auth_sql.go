@@ -289,18 +289,9 @@ func (a *Auth) DeleteUser(ctx context.Context, id int64) error {
 			return ErrBadDatabase
 		}
 
-		_, err = txEmail.ExecBuilder(ctx, a.createBuilder().
-			Delete("<prefix>user_email").
-			Where("user_id = {id}").
-			Param("id", id))
-
+		err = a.deleteUserEmail(ctx, txEmail, uid, hashEmail)
 		if err != nil {
-			a.logger.Error("auth: DeleteUser:Email",
-				slog.String("tag", "db"),
-				slog.Int64("user_id", id),
-				slog.String("email", pd.Email),
-				slog.Any("err", err))
-			return ErrBadDatabase
+			return err
 		}
 
 	}
@@ -316,18 +307,9 @@ func (a *Auth) DeleteUser(ctx context.Context, id int64) error {
 			return ErrBadDatabase
 		}
 
-		_, err = txMobile.ExecBuilder(ctx, a.createBuilder().
-			Delete("<prefix>user_mobile").
-			Where("user_id = {id}").
-			Param("id", id))
-
+		err = a.deleteUserMobile(ctx, txMobile, uid, hashMobile)
 		if err != nil {
-			a.logger.Error("auth: DeleteUser:Mobile",
-				slog.String("tag", "db"),
-				slog.Int64("user_id", id),
-				slog.String("mobile", pd.Mobile),
-				slog.Any("err", err))
-			return ErrBadDatabase
+			return err
 		}
 	}
 
@@ -341,30 +323,16 @@ func (a *Auth) DeleteUser(ctx context.Context, id int64) error {
 		return ErrBadDatabase
 	}
 
-	_, err = txUser.ExecBuilder(ctx, a.createBuilder().
-		Delete("<prefix>user").
-		Where("id = {id}").
-		Param("id", id))
+	err = a.deleteUser(ctx, txUser, uid)
 	if err != nil {
-		a.logger.Error("auth: DeleteUser",
-			slog.String("tag", "db"),
-			slog.Int64("id", id),
-			slog.Any("err", err))
-		return ErrBadDatabase
+		return err
 	}
 
-	_, err = txUser.ExecBuilder(ctx, a.createBuilder().
-		Delete("<prefix>user_profile").
-		Where("user_id = {id}").
-		Param("id", id))
-
+	err = a.deleteUserProfile(ctx, txEmail, uid)
 	if err != nil {
-		a.logger.Error("auth: DeleteUser",
-			slog.String("tag", "db"),
-			slog.Int64("id", id),
-			slog.Any("err", err))
-		return ErrBadDatabase
+		return err
 	}
+
 	if txEmail != nil {
 		err = txEmail.Commit()
 		if err != nil {

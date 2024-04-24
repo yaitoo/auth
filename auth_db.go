@@ -132,8 +132,8 @@ func (a *Auth) createUser(ctx context.Context, tx *sqle.Tx, id shardid.ID, statu
 	return u, nil
 }
 
-func (a *Auth) deleteUser(ctx context.Context, id shardid.ID) error {
-	_, err := a.db.On(id).
+func (a *Auth) deleteUser(ctx context.Context, tx *sqle.Tx, id shardid.ID) error {
+	_, err := tx.
 		ExecBuilder(ctx, a.createBuilder().
 			Delete("<prefix>user").
 			Where("id = {id}").
@@ -149,9 +149,9 @@ func (a *Auth) deleteUser(ctx context.Context, id shardid.ID) error {
 	return nil
 }
 
-func (a *Auth) deleteUserProfile(ctx context.Context, userID shardid.ID) error {
+func (a *Auth) deleteUserProfile(ctx context.Context, tx *sqle.Tx, userID shardid.ID) error {
 
-	_, err := a.db.On(userID).
+	_, err := tx.
 		ExecBuilder(ctx, a.createBuilder().
 			Delete("<prefix>user_profile").
 			Where("user_id = {user_id}").
