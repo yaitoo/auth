@@ -15,7 +15,7 @@ func (a *Auth) LoginWithOTP(ctx context.Context, email, otp string) (Session, er
 		return noSession, ErrEmailNotFound
 	}
 
-	pd, err := a.getUserProfileData(ctx, u.ID)
+	pd, err := a.getProfileData(ctx, a.db.On(u.ID), u.ID.Int64)
 	if err != nil {
 		return noSession, err
 	}
@@ -36,7 +36,7 @@ func (a *Auth) LoginMobileWithOTP(ctx context.Context, mobile, otp string) (Sess
 		return noSession, ErrMobileNotFound
 	}
 
-	pd, err := a.getUserProfileData(ctx, u.ID)
+	pd, err := a.getProfileData(ctx, a.db.On(u.ID), u.ID.Int64)
 	if err != nil {
 		return noSession, err
 	}

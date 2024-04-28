@@ -3,6 +3,7 @@ package auth
 import (
 	"time"
 
+	"github.com/yaitoo/sqle"
 	"github.com/yaitoo/sqle/shardid"
 )
 
@@ -30,8 +31,13 @@ type User struct {
 	Passwd string `json:"-"`
 	Salt   string `json:"-"`
 
-	Email  string `json:"email,omitempty"`
-	Mobile string `json:"mobile,omitempty"`
+	Email           string    `json:"email,omitempty"`
+	EmailVerified   sqle.Bool `json:"emailVerified,omitempty"`
+	EmailVerifiedAt sqle.Time `json:"emailVerifiedAt,omitempty"`
+
+	Mobile           string    `json:"mobile,omitempty"`
+	MobileVerified   sqle.Bool `json:"mobileVerified,omitempty"`
+	MobileVerifiedAt sqle.Time `json:"mobileVerifiedAt,omitempty"`
 
 	CreatedAt time.Time `json:"createdAt,omitempty"`
 	UpdatedAt time.Time `json:"updatedAt,omitempty"`
