@@ -47,7 +47,7 @@ func TestLoginWithOTP(t *testing.T) {
 				u, err := authTest.CreateUser(context.Background(), UserStatusWaiting, "otp@sign_in_with_otp.com", "", "abc123", "", "")
 				r.NoError(err)
 
-				pd, err := authTest.getProfileData(context.Background(), authTest.db.On(u.ID), u.ID.Int64)
+				pd, err := authTest.GetProfileData(context.Background(), authTest.db.On(u.ID), u.ID.Int64)
 				r.NoError(err)
 
 				code, err := totp.GenerateCode(pd.TKey, time.Now())
@@ -126,7 +126,7 @@ func TestLoginMobileWithOTP(t *testing.T) {
 				u, err := authTest.CreateUser(context.Background(), UserStatusActivated, "", "1+333444555", "abc123", "", "")
 				r.NoError(err)
 
-				pd, err := authTest.getProfileData(context.Background(), authTest.db.On(u.ID), u.ID.Int64)
+				pd, err := authTest.GetProfileData(context.Background(), authTest.db.On(u.ID), u.ID.Int64)
 				r.NoError(err)
 
 				code, err := totp.GenerateCode(pd.TKey, time.Now())

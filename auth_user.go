@@ -385,7 +385,7 @@ func (a *Auth) DeleteUser(ctx context.Context, id int64) error {
 
 	uid := shardid.Parse(id)
 	dbUser := a.db.On(uid)
-	pd, err := a.getProfileData(ctx, dbUser, id)
+	pd, err := a.GetProfileData(ctx, dbUser, id)
 	if err != nil {
 		return err
 	}
