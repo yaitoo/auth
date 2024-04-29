@@ -463,7 +463,7 @@ func (a *Auth) DeleteUser(ctx context.Context, id int64) error {
 			slog.Any("err", err))
 
 		errs := dtc.Rollback()
-		if errs != nil {
+		if len(errs) > 0 {
 			a.logger.Error("auth: DeleteUser:Rollback",
 				slog.String("tag", "db"),
 				slog.Int64("user_id", id),

@@ -154,6 +154,22 @@ func (a *Auth) UpdateProfile(ctx context.Context, id int64, email, mobile string
 		return a.UpdateProfileData(ctx, conn, id, pd, now)
 	}, nil)
 
+	err = dtc.Commit()
+	if err != nil {
+		a.logger.Error("auth: UpdateProfile",
+			slog.String("tag", "db"),
+			slog.Any("err", err))
+
+		errs := dtc.Rollback()
+		if len(errs) > 0 {
+			a.logger.Error("auth: UpdateProfile:Rollback",
+				slog.String("tag", "db"),
+				slog.Any("err", errs))
+		}
+
+		return ErrBadDatabase
+	}
+
 	return nil
 }
 

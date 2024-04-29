@@ -221,7 +221,7 @@ func (a *Auth) AddRoleUsers(ctx context.Context, rid int, uIDs ...int64) error {
 
 		_, err = tx.ExecBuilder(ctx, a.createBuilder().
 			Update("<prefix>role").
-			Set("user_count", n).
+			SetExpr("user_count = user_count + {n}").Param("n", n).
 			Where("id = {id}").
 			Param("id", rid))
 
