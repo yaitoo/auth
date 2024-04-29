@@ -25,7 +25,7 @@ func (a *Auth) UpdateProfile(ctx context.Context, id int64, email, mobile string
 	uid := shardid.Parse(id)
 	dbUser := a.db.On(uid)
 
-	pd, err := a.GetProfileData(ctx, dbUser, id)
+	pd, err := a.getProfileData(ctx, dbUser, id)
 	if err != nil {
 		return err
 	}
@@ -151,7 +151,7 @@ func (a *Auth) UpdateProfile(ctx context.Context, id int64, email, mobile string
 	pd.Email = email
 	pd.Mobile = mobile
 	dtc.Prepare(dbUser, func(ctx context.Context, conn sqle.Connector) error {
-		return a.updateProfileData(ctx, conn, id, pd, now)
+		return a.UpdateProfileData(ctx, conn, id, pd, now)
 	}, nil)
 
 	return nil
@@ -241,14 +241,22 @@ func (a *Auth) deleteProfile(ctx context.Context, conn sqle.Connector, userID sh
 	return nil
 }
 
-// GetProfileData retrieves the profile data for a given user ID.
+// GetProfileData retrieves the profile data for the given user ID.
+// It returns the profile data and an error, if any.
+func (a *Auth) GetProfileData(ctx context.Context, id int64) (ProfileData, error) {
+	uid := shardid.Parse(id)
+	conn := a.db.On(uid)
+	return a.getProfileData(ctx, conn, id)
+}
+
+// getProfileData retrieves the profile data for a given user ID.
 // It takes a context, a database connector, and the user ID as parameters.
 // It returns the profile data as a ProfileData struct and an error if any.
 // If the profile data is not found, it returns a default profile data and ErrProfileNotFound error.
 // If there is an error accessing the database, it returns a default profile data and ErrBadDatabase error.
 // If there is an error decrypting the profile data, it returns a default profile data and ErrUnknown error.
 // If there is an error unmarshaling the profile data, it returns a default profile data and ErrUnknown error.
-func (a *Auth) GetProfileData(ctx context.Context, conn sqle.Connector, id int64) (ProfileData, error) {
+func (a *Auth) getProfileData(ctx context.Context, conn sqle.Connector, id int64) (ProfileData, error) {
 	var data string
 	err := conn.
 		QueryRowBuilder(ctx, a.createBuilder().
@@ -299,7 +307,7 @@ func (a *Auth) GetProfileData(ctx context.Context, conn sqle.Connector, id int64
 	return pd, nil
 }
 
-// updateProfileData updates the profile data for a user in the database.
+// UpdateProfileData updates the profile data for a user in the database.
 // It takes the following parameters:
 // - ctx: The context.Context object for the request.
 // - conn: The sqle.Connector object for executing SQL queries.
@@ -307,7 +315,7 @@ func (a *Auth) GetProfileData(ctx context.Context, conn sqle.Connector, id int64
 // - pd: The ProfileData struct containing the updated profile data.
 // - now: The current time.
 // It returns an error if there was a problem updating the profile data.
-func (a *Auth) updateProfileData(ctx context.Context, conn sqle.Connector, id int64, pd ProfileData, now time.Time) error {
+func (a *Auth) UpdateProfileData(ctx context.Context, conn sqle.Connector, id int64, pd ProfileData, now time.Time) error {
 
 	_, err := conn.ExecBuilder(ctx, a.createBuilder().
 		Update("<prefix>user").
