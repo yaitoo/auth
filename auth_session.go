@@ -7,7 +7,7 @@ import (
 	"github.com/yaitoo/sqle/shardid"
 )
 
-var noUserID shardid.ID
+var EmptyUserID shardid.ID
 
 // Logout sign out the user, and delete his refresh token
 func (a *Auth) Logout(ctx context.Context, uid shardid.ID) error {
@@ -21,11 +21,11 @@ func (a *Auth) IsAuthenticated(ctx context.Context, accessToken string) (shardid
 	})
 
 	if err != nil {
-		return noUserID, ErrInvalidToken
+		return EmptyUserID, ErrInvalidToken
 	}
 
 	if !token.Valid {
-		return noUserID, ErrInvalidToken
+		return EmptyUserID, ErrInvalidToken
 	}
 
 	uc := token.Claims.(*UserClaims)

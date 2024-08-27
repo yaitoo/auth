@@ -16,8 +16,9 @@ var (
 
 	ErrPasswdNotMatched = errors.New("auth: passwd_not_matched")
 
-	ErrOTPNotMatched  = errors.New("auth: otp_not_matched")
+	ErrOtpNotMatched  = errors.New("auth: otp_not_matched")
 	ErrCodeNotMatched = errors.New("auth: code_not_matched")
 
 	ErrInvalidToken = errors.New("auth: invalid_token")
+	ErrBadRequest   = errors.New("auth: bad_request")
 )

@@ -38,7 +38,6 @@ func (a *Auth) QueryPerms(ctx context.Context, where *sqle.WhereBuilder) ([]Perm
 
 // RegisterPerm create new permission if it doesn't exists
 func (a *Auth) RegisterPerm(ctx context.Context, code, tag string) error {
-
 	t, err := a.getPermTag(ctx, code)
 
 	// perm exits

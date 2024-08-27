@@ -32,7 +32,7 @@ func TestLoginWithOTP(t *testing.T) {
 		{
 			name:      "otp_not_matched_should_not_work",
 			email:     "otp_not_matched@sign_in_with_otp.com",
-			wantedErr: ErrOTPNotMatched,
+			wantedErr: ErrOtpNotMatched,
 			setup: func(r *require.Assertions) string {
 				_, err := authTest.CreateUser(context.Background(), UserStatusWaiting, "otp_not_matched@sign_in_with_otp.com", "", "abc123", "", "")
 				r.NoError(err)
@@ -111,7 +111,7 @@ func TestLoginMobileWithOTP(t *testing.T) {
 		{
 			name:      "otp_not_matched_should_not_work",
 			mobile:    "1+222333444",
-			wantedErr: ErrOTPNotMatched,
+			wantedErr: ErrOtpNotMatched,
 			setup: func(r *require.Assertions) string {
 				_, err := authTest.CreateUser(context.Background(), UserStatusActivated, "", "1+222333444", "abc123", "", "")
 				r.NoError(err)

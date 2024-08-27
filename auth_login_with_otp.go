@@ -21,7 +21,7 @@ func (a *Auth) LoginWithOTP(ctx context.Context, email, otp string) (Session, er
 	}
 
 	if !totp.Validate(otp, pd.TKey) {
-		return noSession, ErrOTPNotMatched
+		return noSession, ErrOtpNotMatched
 	}
 
 	return a.createSession(ctx, u.ID, u.FirstName, u.LastName, "", "OTP")
@@ -42,7 +42,7 @@ func (a *Auth) LoginMobileWithOTP(ctx context.Context, mobile, otp string) (Sess
 	}
 
 	if !totp.Validate(otp, pd.TKey) {
-		return noSession, ErrOTPNotMatched
+		return noSession, ErrOtpNotMatched
 	}
 
 	return a.createSession(ctx, u.ID, u.FirstName, u.LastName, "", "OTP")
