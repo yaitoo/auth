@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/mattn/go-sqlite3 v1.14.22
+	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/pquerna/otp v1.4.0
 	github.com/stretchr/testify v1.9.0
 	github.com/yaitoo/sqle v1.5.1
